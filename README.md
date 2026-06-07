@@ -81,6 +81,10 @@ Click the icon again to turn the inspector off.
 Releases are managed by Release Please through
 `.github/workflows/release.yml`.
 
+The workflow uses the `RELEASE_PLEASE_TOKEN` repository secret when available.
+This should contain a GitHub personal access token with permission to manage
+contents and pull requests for this repository.
+
 Use Conventional Commit messages so changes are grouped correctly:
 
 ```text
