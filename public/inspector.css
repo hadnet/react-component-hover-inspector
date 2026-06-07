@@ -1,0 +1,91 @@
+#rchi-highlight,
+#rchi-tooltip {
+  all: initial !important;
+  box-sizing: border-box !important;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  display: none !important;
+  pointer-events: none !important;
+}
+
+#rchi-highlight {
+  border: 1px solid rgb(96 165 250 / 95%) !important;
+  border-radius: 2px !important;
+  background: rgb(96 165 250 / 22%) !important;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 30%),
+    0 0 16px rgb(59 130 246 / 18%) !important;
+}
+
+#rchi-tooltip {
+  max-width: min(360px, calc(100vw - 16px)) !important;
+  min-height: 28px !important;
+  padding: 4px 8px !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(255 255 255 / 12%) !important;
+  border-radius: 4px !important;
+  background: rgb(43 45 54 / 98%) !important;
+  box-shadow:
+    0 6px 22px rgb(0 0 0 / 30%),
+    0 1px 2px rgb(0 0 0 / 35%) !important;
+  color: #f4f4f5 !important;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace !important;
+  font-size: 13px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 18px !important;
+  letter-spacing: normal !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  text-overflow: ellipsis !important;
+  text-shadow: none !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+#rchi-highlight.rchi-visible,
+#rchi-tooltip.rchi-visible {
+  display: block !important;
+}
+
+#rchi-tooltip.rchi-visible {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+#rchi-tooltip .rchi-element,
+#rchi-tooltip .rchi-component,
+#rchi-tooltip .rchi-dimensions,
+#rchi-tooltip .rchi-context,
+#rchi-tooltip .rchi-separator {
+  all: initial !important;
+  font: inherit !important;
+  line-height: inherit !important;
+  white-space: nowrap !important;
+}
+
+#rchi-tooltip .rchi-element,
+#rchi-tooltip .rchi-component {
+  color: #f472d0 !important;
+}
+
+#rchi-tooltip .rchi-context {
+  color: #e4e4e7 !important;
+  margin-left: 6px !important;
+}
+
+#rchi-tooltip .rchi-component {
+  margin-left: 4px !important;
+}
+
+#rchi-tooltip .rchi-separator {
+  color: #a1a1aa !important;
+}
+
+#rchi-tooltip .rchi-dimensions {
+  color: #e4e4e7 !important;
+  margin-left: 8px !important;
+}

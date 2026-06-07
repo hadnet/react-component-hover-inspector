@@ -1,0 +1,17 @@
+{
+  "name": "react-component-hover-inspector",
+  "version": "1.0.4",
+  "private": true,
+  "description": "A local-development Chrome extension that identifies React components on hover.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "dev": "node scripts/build.mjs --watch",
+    "test": "npm run build && node test/background-injection.mjs && node test/component-resolution.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.326",
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3"
+  }
+}

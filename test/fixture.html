@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Component Hover Inspector fixture</title>
+    <link rel="stylesheet" href="/dist/inspector.css" />
+    <style>
+      body {
+        margin: 40px;
+        background: #fafafa;
+        color: #18181b;
+        font-family: system-ui, sans-serif;
+      }
+
+      .card {
+        width: 320px;
+        padding: 24px;
+        border: 1px solid #d4d4d8;
+        border-radius: 12px;
+        background: white;
+      }
+    </style>
+    <script>
+      globalThis.chrome = {
+        runtime: {
+          onMessage: {
+            addListener(listener) {
+              globalThis.setInspectorEnabled = (enabled) =>
+                listener({ type: "SET_ENABLED", enabled });
+            },
+          },
+          sendMessage() {
+            return Promise.resolve({ enabled: true });
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <div class="card" id="known">
+      <h1>Dashboard card</h1>
+      <button id="known-target">Inspect named component</button>
+      <button id="server-target">Inspect server component</button>
+      <button id="motion-target">Inspect Motion wrapper</button>
+    </div>
+    <p id="unknown">Inspect unknown component</p>
+    <button type="button" onclick="setInspectorEnabled(false)">
+      Disable inspector
+    </button>
+
+    <script>
+      function DashboardCard() {}
+
+      const hostFiber = {
+        type: "button",
+        elementType: "button",
+        return: {
+          type: DashboardCard,
+          elementType: DashboardCard,
+          return: null,
+        },
+      };
+
+      document.querySelector("#known-target").__reactFiber$fixture = hostFiber;
+
+      function SegmentViewNode() {}
+
+      document.querySelector("#server-target").__reactFiber$fixture = {
+        type: "button",
+        elementType: "button",
+        stateNode: {
+          constructor: SegmentViewNode,
+        },
+        _debugInfo: [
+          { name: "Dashboard", env: "Server" },
+          { name: "InfoCard", env: "Server" },
+        ],
+        return: {
+          type: SegmentViewNode,
+          elementType: SegmentViewNode,
+          return: null,
+        },
+      };
+
+      function Navbar() {}
+      function MotionComponent() {}
+
+      document.querySelector("#motion-target").__reactFiber$fixture = {
+        type: "button",
+        return: {
+          type: {
+            displayName: "motion.div",
+            render: MotionComponent,
+          },
+          return: {
+            type: Navbar,
+            return: null,
+          },
+        },
+      };
+    </script>
+    <script src="/dist/page-inspector.js"></script>
+    <script src="/dist/content.js"></script>
+  </body>
+</html>
