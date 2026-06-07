@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create or update release pull request
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Check out released source
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build and test extension
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          npm ci
+          npm run check
+          npm test
+
+      - name: Package extension
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          cd dist
+          zip -r "../react-component-hover-inspector-${TAG_NAME}.zip" .
+
+      - name: Attach extension package to release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          gh release upload "${TAG_NAME}" \
+            "react-component-hover-inspector-${TAG_NAME}.zip" \
+            --clobber

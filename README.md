@@ -75,3 +75,25 @@ Click the icon again to turn the inspector off.
   result.
 - If no meaningful component can be identified, the tooltip displays
   `Unknown React component`.
+
+## Releases
+
+Releases are managed by Release Please through
+`.github/workflows/release.yml`.
+
+Use Conventional Commit messages so changes are grouped correctly:
+
+```text
+fix: correct component name resolution
+feat: add iframe inspection support
+feat!: change the extension activation behavior
+```
+
+- `fix:` creates a patch release.
+- `feat:` creates a minor release.
+- A type followed by `!` creates a major release.
+
+On pushes to `master`, Release Please creates or updates a release pull
+request containing the version bump and generated `CHANGELOG.md`. Merging that
+pull request creates the `vX.Y.Z` tag and GitHub Release. The workflow also
+builds, tests, and attaches a loadable extension ZIP to the release.
