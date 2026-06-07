@@ -18,7 +18,7 @@
 }
 
 #rchi-tooltip {
-  max-width: min(360px, calc(100vw - 16px)) !important;
+  max-width: min(420px, calc(100vw - 16px)) !important;
   min-height: 28px !important;
   padding: 4px 8px !important;
   overflow: hidden !important;
@@ -88,4 +88,54 @@
 #rchi-tooltip .rchi-dimensions {
   color: #e4e4e7 !important;
   margin-left: 8px !important;
+}
+
+#rchi-tooltip .rchi-copy-button {
+  all: initial !important;
+  box-sizing: border-box !important;
+  width: 24px !important;
+  height: 24px !important;
+  margin-left: 8px !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid rgb(255 255 255 / 14%) !important;
+  border-radius: 4px !important;
+  background: rgb(255 255 255 / 6%) !important;
+  color: #d4d4d8 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+#rchi-tooltip .rchi-copy-button:hover {
+  border-color: rgb(244 114 208 / 55%) !important;
+  background: rgb(244 114 208 / 14%) !important;
+  color: #f9a8d4 !important;
+}
+
+#rchi-tooltip .rchi-copy-button:focus-visible {
+  outline: 2px solid #60a5fa !important;
+  outline-offset: 1px !important;
+}
+
+#rchi-tooltip .rchi-copy-button.rchi-copied {
+  border-color: rgb(52 211 153 / 55%) !important;
+  background: rgb(52 211 153 / 14%) !important;
+  color: #6ee7b7 !important;
+}
+
+#rchi-tooltip .rchi-copy-button.rchi-copy-error {
+  border-color: rgb(248 113 113 / 55%) !important;
+  color: #fca5a5 !important;
+}
+
+#rchi-tooltip .rchi-copy-button svg {
+  all: initial !important;
+  display: block !important;
+  width: 14px !important;
+  height: 14px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
 }

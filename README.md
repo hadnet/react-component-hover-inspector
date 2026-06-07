@@ -9,6 +9,8 @@ on local React and Next.js pages.
   current tab.
 - While enabled, move the pointer over an element to highlight it and display
   the DOM tag, nearest meaningful React component name, and element dimensions.
+- Use the clipboard button in the hover label to copy the resolved component
+  name.
 - The inspector checks React DOM properties such as `__reactFiber$`,
   `__reactInternalInstance$`, and `__reactProps$`, then walks up the Fiber tree.
 - React 19 Server Components are resolved through React DevTools metadata when
