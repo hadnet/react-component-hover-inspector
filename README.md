@@ -1,5 +1,7 @@
 # React Component Hover Inspector
 
+<video src="./assets/react-component-hover-inspector-demo.mp4" controls width="100%"></video>
+
 A Manifest V3 Chrome extension for identifying React component names directly
 on local React and Next.js pages.
 
