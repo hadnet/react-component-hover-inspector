@@ -50,6 +50,18 @@
   display: block !important;
 }
 
+#rchi-highlight.rchi-pinned {
+  border-color: rgb(244 114 208 / 95%) !important;
+  background: rgb(244 114 208 / 16%) !important;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 30%),
+    0 0 18px rgb(244 114 208 / 22%) !important;
+}
+
+#rchi-tooltip.rchi-pinned {
+  border-color: rgb(244 114 208 / 40%) !important;
+}
+
 #rchi-tooltip.rchi-visible {
   display: flex !important;
   align-items: center !important;

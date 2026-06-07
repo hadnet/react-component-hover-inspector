@@ -9,7 +9,9 @@ on local React and Next.js pages.
   current tab.
 - While enabled, move the pointer over an element to highlight it and display
   the DOM tag, nearest meaningful React component name, and element dimensions.
-- Use the clipboard button in the hover label to copy the resolved component
+- Click an inspected element to pin the selection. Click the pinned element
+  again to release it and resume normal hover inspection.
+- Use the clipboard button in the pinned label to copy the resolved component
   name.
 - The inspector checks React DOM properties such as `__reactFiber$`,
   `__reactInternalInstance$`, and `__reactProps$`, then walks up the Fiber tree.
