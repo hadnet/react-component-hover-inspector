@@ -13,11 +13,16 @@ const INSTALLATION_KEY = "__RCHI_CONTENT_INSPECTOR_INSTALLED__";
 const UNKNOWN_COMPONENT = "Unknown React component";
 const TOOLTIP_GAP = 6;
 const VIEWPORT_MARGIN = 8;
+const COPY_FEEDBACK_DURATION = 1_200;
 
 let enabled = false;
 let frameId: number | null = null;
+let positionFrameId: number | null = null;
 let requestId = 0;
 let currentElement: Element | null = null;
+let pinnedElement: Element | null = null;
+let currentComponentName = UNKNOWN_COMPONENT;
+let copyFeedbackTimeout: number | null = null;
 let pointerX = 0;
 let pointerY = 0;
 let highlight: HTMLDivElement | null = null;
@@ -34,15 +39,26 @@ function ensureOverlay(): void {
 
   tooltip = document.createElement("div");
   tooltip.id = TOOLTIP_ID;
-  tooltip.setAttribute("aria-hidden", "true");
 
   document.documentElement.append(highlight, tooltip);
 }
 
 function hideOverlay(): void {
-  highlight?.classList.remove("rchi-visible");
-  tooltip?.classList.remove("rchi-visible");
+  if (copyFeedbackTimeout !== null) {
+    window.clearTimeout(copyFeedbackTimeout);
+    copyFeedbackTimeout = null;
+  }
+  highlight?.classList.remove("rchi-visible", "rchi-pinned");
+  tooltip?.classList.remove("rchi-visible", "rchi-pinned");
   currentElement = null;
+  pinnedElement = null;
+  currentComponentName = UNKNOWN_COMPONENT;
+}
+
+function setPinned(element: Element | null): void {
+  pinnedElement = element;
+  highlight?.classList.toggle("rchi-pinned", element !== null);
+  tooltip?.classList.toggle("rchi-pinned", element !== null);
 }
 
 function setImportantStyle(
@@ -66,6 +82,106 @@ function positionHighlight(element: Element): void {
   highlight.classList.add("rchi-visible");
 }
 
+function createClipboardIcon(): SVGSVGElement {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(svgNamespace, "svg");
+  const back = document.createElementNS(svgNamespace, "rect");
+  const front = document.createElementNS(svgNamespace, "rect");
+
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  back.setAttribute("x", "8");
+  back.setAttribute("y", "3");
+  back.setAttribute("width", "11");
+  back.setAttribute("height", "13");
+  back.setAttribute("rx", "2");
+  front.setAttribute("x", "5");
+  front.setAttribute("y", "8");
+  front.setAttribute("width", "11");
+  front.setAttribute("height", "13");
+  front.setAttribute("rx", "2");
+  icon.append(back, front);
+
+  return icon;
+}
+
+function copyTextWithCommand(text: string): void {
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  setImportantStyle(input, "position", "fixed");
+  setImportantStyle(input, "left", "-9999px");
+  setImportantStyle(input, "opacity", "0");
+  document.documentElement.append(input);
+  input.select();
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Copy command was rejected");
+    }
+  } finally {
+    input.remove();
+  }
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText !== undefined) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Content scripts can expose the Clipboard API while the page denies its
+      // permission. The user-initiated copy command remains available.
+    }
+  }
+
+  copyTextWithCommand(text);
+}
+
+function createCopyButton(componentName: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "rchi-copy-button";
+  button.type = "button";
+  button.title = `Copy ${componentName}`;
+  button.setAttribute("aria-label", `Copy component name ${componentName}`);
+  button.append(createClipboardIcon());
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    void copyText(componentName)
+      .then(() => {
+        button.classList.add("rchi-copied");
+        button.title = "Copied";
+        button.setAttribute("aria-label", `Copied ${componentName}`);
+
+        if (copyFeedbackTimeout !== null) {
+          window.clearTimeout(copyFeedbackTimeout);
+        }
+        copyFeedbackTimeout = window.setTimeout(() => {
+          button.classList.remove("rchi-copied");
+          button.title = `Copy ${componentName}`;
+          button.setAttribute(
+            "aria-label",
+            `Copy component name ${componentName}`,
+          );
+          copyFeedbackTimeout = null;
+        }, COPY_FEEDBACK_DURATION);
+      })
+      .catch(() => {
+        button.classList.add("rchi-copy-error");
+        button.title = "Unable to copy";
+      });
+  });
+
+  return button;
+}
+
 function setTooltipContent(
   element: Element,
   componentName: string,
@@ -81,6 +197,7 @@ function setTooltipContent(
   const componentLabel = document.createElement("span");
   const separator = document.createElement("span");
   const dimensions = document.createElement("span");
+  const copyButton = createCopyButton(componentName);
 
   elementLabel.className = "rchi-element";
   contextLabel.className = "rchi-context";
@@ -100,6 +217,7 @@ function setTooltipContent(
     componentLabel,
     separator,
     dimensions,
+    copyButton,
   );
 }
 
@@ -138,9 +256,19 @@ function requestComponentName(element: Element): void {
   );
 }
 
+function inspectElement(element: Element): void {
+  currentElement = element;
+  currentComponentName = UNKNOWN_COMPONENT;
+  positionHighlight(element);
+  setTooltipContent(element, currentComponentName);
+  tooltip?.classList.add("rchi-visible");
+  positionTooltip(element);
+  requestComponentName(element);
+}
+
 function inspectAtPointer(): void {
   frameId = null;
-  if (!enabled) {
+  if (!enabled || pinnedElement !== null) {
     return;
   }
 
@@ -149,28 +277,73 @@ function inspectAtPointer(): void {
 
   if (
     element === null ||
-    element === highlight ||
-    element === tooltip ||
-    element.closest(`#${HIGHLIGHT_ID}, #${TOOLTIP_ID}`) !== null
+    element === highlight
   ) {
     hideOverlay();
     return;
   }
 
-  currentElement = element;
-  positionHighlight(element);
-  setTooltipContent(element, UNKNOWN_COMPONENT);
-  tooltip?.classList.add("rchi-visible");
-  positionTooltip(element);
-  requestComponentName(element);
+  if (element === tooltip || element.closest(`#${TOOLTIP_ID}`) !== null) {
+    return;
+  }
+
+  inspectElement(element);
 }
 
 function onPointerMove(event: PointerEvent): void {
   pointerX = event.clientX;
   pointerY = event.clientY;
 
-  if (frameId === null) {
+  if (pinnedElement === null && frameId === null) {
     frameId = requestAnimationFrame(inspectAtPointer);
+  }
+}
+
+function onDocumentClick(event: MouseEvent): void {
+  if (!enabled || !(event.target instanceof Element)) {
+    return;
+  }
+
+  const target = event.target;
+  if (target === tooltip || target.closest(`#${TOOLTIP_ID}`) !== null) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  pointerX = event.clientX;
+  pointerY = event.clientY;
+
+  if (pinnedElement === target || pinnedElement?.contains(target) === true) {
+    setPinned(null);
+    inspectAtPointer();
+    return;
+  }
+
+  ensureOverlay();
+  setPinned(target);
+  inspectElement(target);
+}
+
+function updatePinnedOverlay(): void {
+  positionFrameId = null;
+  if (!enabled || pinnedElement === null) {
+    return;
+  }
+
+  if (!pinnedElement.isConnected) {
+    hideOverlay();
+    return;
+  }
+
+  positionHighlight(pinnedElement);
+  setTooltipContent(pinnedElement, currentComponentName);
+  positionTooltip(pinnedElement);
+}
+
+function onViewportChange(): void {
+  if (pinnedElement !== null && positionFrameId === null) {
+    positionFrameId = requestAnimationFrame(updatePinnedOverlay);
   }
 }
 
@@ -203,6 +376,7 @@ function onInspectResponse(event: Event): void {
     return;
   }
 
+  currentComponentName = response.componentName;
   setTooltipContent(currentElement, response.componentName);
   positionTooltip(currentElement);
 }
@@ -216,11 +390,24 @@ function setEnabled(nextEnabled: boolean): void {
   if (enabled) {
     ensureOverlay();
     document.addEventListener("pointermove", onPointerMove, { passive: true });
+    document.addEventListener("click", onDocumentClick, true);
+    document.addEventListener("scroll", onViewportChange, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("resize", onViewportChange, { passive: true });
   } else {
     document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("click", onDocumentClick, true);
+    document.removeEventListener("scroll", onViewportChange, true);
+    window.removeEventListener("resize", onViewportChange);
     if (frameId !== null) {
       cancelAnimationFrame(frameId);
       frameId = null;
+    }
+    if (positionFrameId !== null) {
+      cancelAnimationFrame(positionFrameId);
+      positionFrameId = null;
     }
     hideOverlay();
   }
