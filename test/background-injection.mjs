@@ -6,6 +6,7 @@ const listeners = {};
 const calls = [];
 const storage = {};
 let messageAttempts = 0;
+let openedSourceUrl = "";
 
 const chrome = {
   action: {
@@ -79,7 +80,19 @@ const code = await readFile(
   new URL("../dist/background.js", import.meta.url),
   "utf8",
 );
-vm.runInNewContext(code, { chrome, URL });
+async function fetch(url) {
+  openedSourceUrl = String(url);
+  return { ok: true };
+}
+
+vm.runInNewContext(code, {
+  AbortController,
+  URL,
+  chrome,
+  clearTimeout,
+  fetch,
+  setTimeout,
+});
 
 assert.equal(typeof listeners.onClicked, "function");
 listeners.onClicked({ id: 42, url: "http://localhost:3004/dashboard" });
@@ -103,6 +116,37 @@ assert.equal(
 assert.equal(
   calls.filter(([name]) => name === "sendMessage").length,
   2,
+);
+
+let openSourceResponse;
+const keptOpen = listeners.onMessage(
+  {
+    type: "OPEN_SOURCE",
+    sourceLocation: {
+      file: "/project/components/user-button.tsx",
+      line: 42,
+      column: 5,
+      nodeName: "button",
+      serverPort: 6010,
+    },
+  },
+  {
+    tab: {
+      id: 42,
+      url: "http://localhost:3004/dashboard",
+    },
+  },
+  (response) => {
+    openSourceResponse = response;
+  },
+);
+
+assert.equal(keptOpen, true);
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(openSourceResponse?.ok, true);
+assert.equal(
+  openedSourceUrl,
+  "http://localhost:6010/?file=%2Fproject%2Fcomponents%2Fuser-button.tsx&line=42&column=5",
 );
 
 console.log("Background reinjects the inspector into an already-open tab.");

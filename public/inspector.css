@@ -112,7 +112,7 @@
   font-size: 11px !important;
 }
 
-#rchi-tooltip .rchi-copy-button {
+#rchi-tooltip .rchi-action-button {
   all: initial !important;
   box-sizing: border-box !important;
   width: 24px !important;
@@ -130,13 +130,13 @@
   pointer-events: auto !important;
 }
 
-#rchi-tooltip .rchi-copy-button:hover {
+#rchi-tooltip .rchi-action-button:hover {
   border-color: rgb(244 114 208 / 55%) !important;
   background: rgb(244 114 208 / 14%) !important;
   color: #f9a8d4 !important;
 }
 
-#rchi-tooltip .rchi-copy-button:focus-visible {
+#rchi-tooltip .rchi-action-button:focus-visible {
   outline: 2px solid #60a5fa !important;
   outline-offset: 1px !important;
 }
@@ -147,12 +147,31 @@
   color: #6ee7b7 !important;
 }
 
+#rchi-tooltip .rchi-source-button.rchi-source-opened {
+  border-color: rgb(52 211 153 / 55%) !important;
+  background: rgb(52 211 153 / 14%) !important;
+  color: #6ee7b7 !important;
+}
+
+#rchi-tooltip .rchi-source-button.rchi-source-error {
+  border-color: rgb(248 113 113 / 55%) !important;
+  color: #fca5a5 !important;
+}
+
+#rchi-tooltip .rchi-source-button:disabled {
+  border-color: rgb(255 255 255 / 8%) !important;
+  background: rgb(255 255 255 / 3%) !important;
+  color: #71717a !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
 #rchi-tooltip .rchi-copy-button.rchi-copy-error {
   border-color: rgb(248 113 113 / 55%) !important;
   color: #fca5a5 !important;
 }
 
-#rchi-tooltip .rchi-copy-button svg {
+#rchi-tooltip .rchi-action-button svg {
   all: initial !important;
   display: block !important;
   width: 14px !important;
