@@ -61,6 +61,7 @@ function CourseCard() {}
 function LinkComponent() {}
 function Navbar() {}
 function MotionComponent() {}
+function UserMenu() {}
 
 const serverComponentElement = new MockElement();
 serverComponentElement.__reactFiber$fixture = {
@@ -121,6 +122,22 @@ motionElement.__reactFiber$fixture = {
 
 assert.equal(componentNameFor(motionElement), "Navbar");
 
+const primitiveElement = new MockElement();
+primitiveElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: {
+      displayName: "Primitive.button.SlotClone",
+    },
+    return: {
+      type: UserMenu,
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(primitiveElement), "UserMenu");
+
 const nextLinkElement = new MockElement();
 nextLinkElement.__reactFiber$fixture = {
   type: "img",
@@ -152,6 +169,11 @@ window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "LinkComponent";
 
 assert.equal(componentNameFor(nextLinkElement), "CourseCard");
+
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
+  .getComponentNameForHostInstance = () => "Primitive.button.SlotClone";
+
+assert.equal(componentNameFor(primitiveElement), "UserMenu");
 
 window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "motion.div";

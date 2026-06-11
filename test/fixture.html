@@ -43,6 +43,7 @@
       <button id="known-target">Inspect named component</button>
       <button id="server-target">Inspect server component</button>
       <button id="motion-target">Inspect Motion wrapper</button>
+      <button id="primitive-target">Inspect dotted primitive wrapper</button>
       <a id="link-target" href="#"><img alt="Inspect Next.js Link wrapper" /></a>
     </div>
     <p id="unknown">Inspect unknown component</p>
@@ -96,6 +97,21 @@
           },
           return: {
             type: Navbar,
+            return: null,
+          },
+        },
+      };
+
+      function UserMenu() {}
+
+      document.querySelector("#primitive-target").__reactFiber$fixture = {
+        type: "button",
+        return: {
+          type: {
+            displayName: "Primitive.button.SlotClone",
+          },
+          return: {
+            type: UserMenu,
             return: null,
           },
         },
