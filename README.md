@@ -19,7 +19,8 @@ on local React and Next.js pages.
 - Use the clipboard button in the pinned label to copy the resolved component
   name.
 - Use the source button to open the inspected JSX node in your configured IDE
-  when `code-inspector-plugin` metadata is available.
+  when `code-inspector-plugin` metadata is available. This launches the file at
+  the exact JSX line and column through your operating system's configured IDE.
 - The inspector checks React DOM properties such as `__reactFiber$`,
   `__reactInternalInstance$`, and `__reactProps$`, then walks up the Fiber tree.
 - React 19 Server Components are resolved through React DevTools metadata when
@@ -80,23 +81,25 @@ Install it in the React or Next.js project being inspected:
 npm install --save-dev code-inspector-plugin
 ```
 
-For Next.js 15.3 or newer with Turbopack:
+Installing the package alone is not enough. It must also be registered in the
+project's bundler configuration so it can add `data-insp-path` metadata to
+rendered elements.
+
+For Next.js 15.3 or newer, including Next.js 16, with Turbopack:
 
 ```ts
 // next.config.ts
 import type { NextConfig } from "next";
 import { codeInspectorPlugin } from "code-inspector-plugin";
 
-const inspector = {
-  bundler: "turbopack" as const,
-  hideConsole: true,
-  hotKeys: false as const,
-  showSwitch: false,
-};
-
 const nextConfig: NextConfig = {
   turbopack: {
-    rules: codeInspectorPlugin(inspector),
+    rules: codeInspectorPlugin({
+      bundler: "turbopack",
+      hideConsole: true,
+      hotKeys: false,
+      showSwitch: false,
+    }),
   },
 };
 
@@ -124,8 +127,13 @@ module.exports = {
 };
 ```
 
-Restart the development server after changing the configuration. The source
-button is disabled when no `data-insp-path` metadata is available.
+Restart the development server after changing the configuration, then reload
+the page. Hover over an element and pin it to use the source button beside the
+copy button.
+
+The source button remains disabled when the plugin is not registered, the
+development server was not restarted, or no `data-insp-path` metadata is
+available for that element.
 
 This first integration opens the JSX location associated with the inspected DOM
 element. Navigating component owners with `Ctrl+Shift+X` changes the displayed
@@ -136,10 +144,13 @@ component name, but it does not change that JSX source location.
 - After changing extension files, run `npm run build` and click **Reload** on
   the extension card in `chrome://extensions`.
 - If the badge displays `ON` but an old extension version is still active,
-  click once to turn it off and once more to turn it on. Version `1.0.4` can
-  inject itself into an already-open localhost tab without reloading the page.
+  reload the extension and the inspected localhost page, then toggle the
+  extension off and on.
 - Open the extension card's **Errors** section if Chrome reports a blocked
   script or invalid manifest.
+- If every source button is disabled, confirm that `code-inspector-plugin` is
+  both installed and registered in `next.config.ts` or the project's bundler
+  configuration. Restart the development server after registering it.
 - If the source button reports an error, confirm that the development server
   using `code-inspector-plugin` is still running.
 
