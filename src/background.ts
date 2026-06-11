@@ -1,4 +1,9 @@
-import type { RuntimeMessage, StateResponse } from "./messages";
+import type {
+  OpenSourceResponse,
+  RuntimeMessage,
+  SourceLocation,
+  StateResponse,
+} from "./messages";
 
 const STORAGE_PREFIX = "enabled:";
 const ENABLED_BADGE_COLOR = "#7c3aed";
@@ -41,6 +46,38 @@ function isSupportedUrl(url: string | undefined): boolean {
     );
   } catch {
     return false;
+  }
+}
+
+async function openSource(location: SourceLocation): Promise<OpenSourceResponse> {
+  if (
+    location.serverPort < 1 ||
+    location.serverPort > 65_535 ||
+    location.file.length === 0
+  ) {
+    return { ok: false };
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const url = new URL(`http://localhost:${location.serverPort}/`);
+    url.searchParams.set("file", location.file);
+    url.searchParams.set("line", String(location.line));
+    url.searchParams.set("column", String(location.column));
+    const controller = new AbortController();
+    timeout = setTimeout(() => controller.abort(), 2_000);
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    return { ok: response.ok };
+  } catch {
+    return { ok: false };
+  } finally {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
   }
 }
 
@@ -117,13 +154,28 @@ chrome.runtime.onMessage.addListener(
   (
     message: RuntimeMessage,
     sender,
-    sendResponse: (response: StateResponse) => void,
+    sendResponse: (response: StateResponse | OpenSourceResponse) => void,
   ) => {
-    if (message.type !== "GET_STATE" || sender.tab?.id === undefined) {
+    if (sender.tab?.id === undefined) {
       return false;
     }
 
-    void getEnabled(sender.tab.id).then((enabled) => sendResponse({ enabled }));
-    return true;
+    if (message.type === "GET_STATE") {
+      void getEnabled(sender.tab.id).then((enabled) =>
+        sendResponse({ enabled }),
+      );
+      return true;
+    }
+
+    if (message.type === "OPEN_SOURCE") {
+      if (!isSupportedUrl(sender.url ?? sender.tab.url)) {
+        sendResponse({ ok: false });
+        return false;
+      }
+      void openSource(message.sourceLocation).then(sendResponse);
+      return true;
+    }
+
+    return false;
   },
 );

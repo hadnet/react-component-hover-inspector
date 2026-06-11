@@ -3,6 +3,7 @@ import {
   INSPECT_RESPONSE_EVENT,
   type InspectRequest,
   type InspectResponse,
+  type SourceLocation,
 } from "./messages";
 
 interface FiberLike {
@@ -35,6 +36,8 @@ const FIBER_PROPERTY_PREFIXES = [
   "__reactInternalInstance$",
 ] as const;
 const PROPS_PROPERTY_PREFIX = "__reactProps$";
+const CODE_INSPECTOR_PATH = "data-insp-path";
+const DEFAULT_CODE_INSPECTOR_PORT = 5_678;
 const UNKNOWN_COMPONENT = "Unknown React component";
 const INSTALLATION_KEY = "__RCHI_PAGE_INSPECTOR_INSTALLED__";
 const UNHELPFUL_NAMES = new Set([
@@ -169,6 +172,64 @@ function findFiber(element: Element): FiberLike | null {
     // Reading this property ensures compatibility with builds that expose only
     // the React props expando. Props alone do not provide an owner Fiber.
     ownPropertyWithPrefix(current, [PROPS_PROPERTY_PREFIX]);
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function findCodeInspectorPort(): number {
+  const inspector = document.querySelector("code-inspector-component") as
+    | (Element & { port?: unknown })
+    | null;
+  return typeof inspector?.port === "number" && inspector.port > 0
+    ? inspector.port
+    : DEFAULT_CODE_INSPECTOR_PORT;
+}
+
+function parseSourceLocation(value: unknown): SourceLocation | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const match = value.trim().match(/^(.*):(\d+):(\d+):([^:]+)$/);
+  if (match === null) {
+    return null;
+  }
+
+  const [, file, line, column, nodeName] = match;
+  if (
+    file === undefined ||
+    file.length === 0 ||
+    line === undefined ||
+    column === undefined ||
+    nodeName === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    file,
+    line: Number(line),
+    column: Number(column),
+    nodeName,
+    serverPort: findCodeInspectorPort(),
+  };
+}
+
+function findSourceLocation(element: Element): SourceLocation | null {
+  let current: Element | null = element;
+
+  while (current !== null) {
+    const pageValue = (current as Element & {
+      [CODE_INSPECTOR_PATH]?: unknown;
+    })[CODE_INSPECTOR_PATH];
+    const sourceLocation =
+      parseSourceLocation(current.getAttribute(CODE_INSPECTOR_PATH)) ??
+      parseSourceLocation(pageValue);
+    if (sourceLocation !== null) {
+      return sourceLocation;
+    }
     current = current.parentElement;
   }
 
@@ -390,6 +451,7 @@ function onInspectRequest(event: Event): void {
     componentName: componentNames[componentIndex] ?? UNKNOWN_COMPONENT,
     componentIndex,
     componentCount: componentNames.length,
+    sourceLocation: findSourceLocation(event.target),
   };
 
   document.dispatchEvent(

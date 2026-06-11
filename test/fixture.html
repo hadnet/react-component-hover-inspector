@@ -30,7 +30,13 @@
                 listener({ type: "SET_ENABLED", enabled });
             },
           },
-          sendMessage() {
+          sendMessage(message) {
+            if (message.type === "OPEN_SOURCE") {
+              globalThis.lastOpenedSource = message.sourceLocation;
+              document.documentElement.dataset.lastOpenedSource =
+                JSON.stringify(message.sourceLocation);
+              return Promise.resolve({ ok: true });
+            }
             return Promise.resolve({ enabled: true });
           },
         },
@@ -46,7 +52,12 @@
       <button id="primitive-target">Inspect dotted primitive wrapper</button>
       <button id="dependency-target">Inspect node_modules wrapper</button>
       <button id="menu-anchor-target">Inspect Radix MenuAnchor</button>
-      <button id="shadcn-target">Inspect Shadcn wrapper ancestry</button>
+      <button
+        id="shadcn-target"
+        data-insp-path="/project/components/user-button.tsx:42:5:button"
+      >
+        Inspect Shadcn wrapper ancestry
+      </button>
       <a id="link-target" href="#"><img alt="Inspect Next.js Link wrapper" /></a>
     </div>
     <p id="unknown">Inspect unknown component</p>

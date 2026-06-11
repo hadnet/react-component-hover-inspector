@@ -18,6 +18,8 @@ on local React and Next.js pages.
   while navigating through wrapper components.
 - Use the clipboard button in the pinned label to copy the resolved component
   name.
+- Use the source button to open the inspected JSX node in your configured IDE
+  when `code-inspector-plugin` metadata is available.
 - The inspector checks React DOM properties such as `__reactFiber$`,
   `__reactInternalInstance$`, and `__reactProps$`, then walks up the Fiber tree.
 - React 19 Server Components are resolved through React DevTools metadata when
@@ -65,6 +67,70 @@ click injects the updated inspector automatically.
 
 Click the icon again to turn the inspector off.
 
+## Open JSX Source
+
+The source button integrates with
+[`code-inspector-plugin`](https://github.com/zh-lx/code-inspector). The plugin
+injects exact JSX file, line, and column metadata and runs a localhost server
+that opens the configured IDE. No VS Code extension is required.
+
+Install it in the React or Next.js project being inspected:
+
+```bash
+npm install --save-dev code-inspector-plugin
+```
+
+For Next.js 15.3 or newer with Turbopack:
+
+```ts
+// next.config.ts
+import type { NextConfig } from "next";
+import { codeInspectorPlugin } from "code-inspector-plugin";
+
+const inspector = {
+  bundler: "turbopack" as const,
+  hideConsole: true,
+  hotKeys: false as const,
+  showSwitch: false,
+};
+
+const nextConfig: NextConfig = {
+  turbopack: {
+    rules: codeInspectorPlugin(inspector),
+  },
+};
+
+export default nextConfig;
+```
+
+For Next.js using Webpack:
+
+```js
+// next.config.js
+const { codeInspectorPlugin } = require("code-inspector-plugin");
+
+module.exports = {
+  webpack(config) {
+    config.plugins.push(
+      codeInspectorPlugin({
+        bundler: "webpack",
+        hideConsole: true,
+        hotKeys: false,
+        showSwitch: false,
+      }),
+    );
+    return config;
+  },
+};
+```
+
+Restart the development server after changing the configuration. The source
+button is disabled when no `data-insp-path` metadata is available.
+
+This first integration opens the JSX location associated with the inspected DOM
+element. Navigating component owners with `Ctrl+Shift+X` changes the displayed
+component name, but it does not change that JSX source location.
+
 ## Troubleshooting
 
 - After changing extension files, run `npm run build` and click **Reload** on
@@ -74,6 +140,8 @@ Click the icon again to turn the inspector off.
   inject itself into an already-open localhost tab without reloading the page.
 - Open the extension card's **Errors** section if Chrome reports a blocked
   script or invalid manifest.
+- If the source button reports an error, confirm that the development server
+  using `code-inspector-plugin` is still running.
 
 ## Limitations
 

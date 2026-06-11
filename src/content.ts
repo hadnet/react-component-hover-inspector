@@ -3,7 +3,9 @@ import {
   INSPECT_RESPONSE_EVENT,
   type InspectRequest,
   type InspectResponse,
+  type OpenSourceResponse,
   type RuntimeMessage,
+  type SourceLocation,
   type StateResponse,
 } from "./messages";
 
@@ -14,6 +16,7 @@ const UNKNOWN_COMPONENT = "Unknown React component";
 const TOOLTIP_GAP = 6;
 const VIEWPORT_MARGIN = 8;
 const COPY_FEEDBACK_DURATION = 1_200;
+const OPEN_SOURCE_FEEDBACK_DURATION = 1_500;
 const NAVIGATE_SHORTCUT_LABEL = "Ctrl+Shift+X";
 
 let enabled = false;
@@ -25,7 +28,9 @@ let pinnedElement: Element | null = null;
 let currentComponentName = UNKNOWN_COMPONENT;
 let currentComponentIndex = 0;
 let currentComponentCount = 0;
+let currentSourceLocation: SourceLocation | null = null;
 let copyFeedbackTimeout: number | null = null;
+let sourceFeedbackTimeout: number | null = null;
 let pointerX = 0;
 let pointerY = 0;
 let highlight: HTMLDivElement | null = null;
@@ -51,6 +56,10 @@ function hideOverlay(): void {
     window.clearTimeout(copyFeedbackTimeout);
     copyFeedbackTimeout = null;
   }
+  if (sourceFeedbackTimeout !== null) {
+    window.clearTimeout(sourceFeedbackTimeout);
+    sourceFeedbackTimeout = null;
+  }
   highlight?.classList.remove("rchi-visible", "rchi-pinned");
   tooltip?.classList.remove("rchi-visible", "rchi-pinned");
   currentElement = null;
@@ -58,6 +67,7 @@ function hideOverlay(): void {
   currentComponentName = UNKNOWN_COMPONENT;
   currentComponentIndex = 0;
   currentComponentCount = 0;
+  currentSourceLocation = null;
 }
 
 function setPinned(element: Element | null): void {
@@ -110,6 +120,24 @@ function createClipboardIcon(): SVGSVGElement {
   return icon;
 }
 
+function createSourceIcon(): SVGSVGElement {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(svgNamespace, "svg");
+  const path = document.createElementNS(svgNamespace, "path");
+  const arrow = document.createElementNS(svgNamespace, "path");
+
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  path.setAttribute("d", "M14 3h7v7M21 3l-9 9");
+  arrow.setAttribute(
+    "d",
+    "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6",
+  );
+  icon.append(path, arrow);
+
+  return icon;
+}
+
 function copyTextWithCommand(text: string): void {
   const input = document.createElement("textarea");
   input.value = text;
@@ -145,7 +173,7 @@ async function copyText(text: string): Promise<void> {
 
 function createCopyButton(componentName: string): HTMLButtonElement {
   const button = document.createElement("button");
-  button.className = "rchi-copy-button";
+  button.className = "rchi-action-button rchi-copy-button";
   button.type = "button";
   button.title = `Copy ${componentName}`;
   button.setAttribute("aria-label", `Copy component name ${componentName}`);
@@ -187,11 +215,81 @@ function createCopyButton(componentName: string): HTMLButtonElement {
   return button;
 }
 
+async function openSource(location: SourceLocation): Promise<void> {
+  const response = await chrome.runtime.sendMessage<
+    RuntimeMessage,
+    OpenSourceResponse
+  >({
+    type: "OPEN_SOURCE",
+    sourceLocation: location,
+  });
+  if (!response.ok) {
+    throw new Error("Open source request failed");
+  }
+}
+
+function createSourceButton(
+  sourceLocation: SourceLocation | null,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "rchi-action-button rchi-source-button";
+  button.type = "button";
+  button.append(createSourceIcon());
+
+  if (sourceLocation === null) {
+    button.disabled = true;
+    button.title =
+      "JSX source unavailable. Install and configure code-inspector-plugin.";
+    button.setAttribute("aria-label", "JSX source unavailable");
+    return button;
+  }
+
+  button.title = `Open JSX source: ${sourceLocation.file}:${sourceLocation.line}`;
+  button.setAttribute(
+    "aria-label",
+    `Open JSX source ${sourceLocation.file} line ${sourceLocation.line}`,
+  );
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    button.classList.remove("rchi-source-error", "rchi-source-opened");
+
+    void openSource(sourceLocation)
+      .then(() => {
+        button.classList.remove("rchi-source-error");
+        button.classList.add("rchi-source-opened");
+        button.title = "Opened JSX source";
+
+        if (sourceFeedbackTimeout !== null) {
+          window.clearTimeout(sourceFeedbackTimeout);
+        }
+        sourceFeedbackTimeout = window.setTimeout(() => {
+          button.classList.remove("rchi-source-opened");
+          button.title = `Open JSX source: ${sourceLocation.file}:${sourceLocation.line}`;
+          sourceFeedbackTimeout = null;
+        }, OPEN_SOURCE_FEEDBACK_DURATION);
+      })
+      .catch(() => {
+        button.classList.remove("rchi-source-opened");
+        button.classList.add("rchi-source-error");
+        button.title =
+          `Unable to open source. Is code-inspector-plugin running on port ${sourceLocation.serverPort}?`;
+      });
+  });
+
+  return button;
+}
+
 function setTooltipContent(
   element: Element,
   componentName: string,
   componentIndex = currentComponentIndex,
   componentCount = currentComponentCount,
+  sourceLocation = currentSourceLocation,
 ): void {
   if (tooltip === null) {
     return;
@@ -205,6 +303,7 @@ function setTooltipContent(
   const separator = document.createElement("span");
   const dimensions = document.createElement("span");
   const ancestry = document.createElement("span");
+  const sourceButton = createSourceButton(sourceLocation);
   const copyButton = createCopyButton(componentName);
 
   elementLabel.className = "rchi-element";
@@ -233,7 +332,7 @@ function setTooltipContent(
   if (componentCount > 1) {
     children.push(ancestry);
   }
-  children.push(copyButton);
+  children.push(sourceButton, copyButton);
   tooltip.replaceChildren(...children);
 }
 
@@ -280,6 +379,7 @@ function inspectElement(element: Element): void {
   currentComponentName = UNKNOWN_COMPONENT;
   currentComponentIndex = 0;
   currentComponentCount = 0;
+  currentSourceLocation = null;
   positionHighlight(element);
   setTooltipContent(element, currentComponentName);
   tooltip?.classList.add("rchi-visible");
@@ -417,7 +517,16 @@ function onInspectResponse(event: Event): void {
     response.requestId !== requestId ||
     typeof response.componentName !== "string" ||
     typeof response.componentIndex !== "number" ||
-    typeof response.componentCount !== "number"
+    typeof response.componentCount !== "number" ||
+    !(
+      response.sourceLocation === null ||
+      (typeof response.sourceLocation === "object" &&
+        typeof response.sourceLocation.file === "string" &&
+        typeof response.sourceLocation.line === "number" &&
+        typeof response.sourceLocation.column === "number" &&
+        typeof response.sourceLocation.nodeName === "string" &&
+        typeof response.sourceLocation.serverPort === "number")
+    )
   ) {
     return;
   }
@@ -425,11 +534,13 @@ function onInspectResponse(event: Event): void {
   currentComponentName = response.componentName;
   currentComponentIndex = response.componentIndex;
   currentComponentCount = response.componentCount;
+  currentSourceLocation = response.sourceLocation;
   setTooltipContent(
     currentElement,
     response.componentName,
     response.componentIndex,
     response.componentCount,
+    response.sourceLocation,
   );
   positionTooltip(currentElement);
 }

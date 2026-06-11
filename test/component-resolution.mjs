@@ -4,10 +4,20 @@ import vm from "node:vm";
 
 const listeners = new Map();
 const responses = [];
+let codeInspectorPort = null;
 
 class MockElement {
   constructor() {
     this.parentElement = null;
+    this.attributes = new Map();
+  }
+
+  getAttribute(name) {
+    return this.attributes.get(name) ?? null;
+  }
+
+  setAttribute(name, value) {
+    this.attributes.set(name, String(value));
   }
 }
 
@@ -26,6 +36,12 @@ const document = {
   dispatchEvent(event) {
     responses.push(event);
     return true;
+  },
+  querySelector(selector) {
+    return selector === "code-inspector-component" &&
+      codeInspectorPort !== null
+      ? { port: codeInspectorPort }
+      : null;
   },
 };
 
@@ -218,6 +234,10 @@ collectionSlotElement.__reactFiber$fixture = {
 assert.equal(componentNameFor(collectionSlotElement), "UserMenu");
 
 const shadcnDropdownElement = new MockElement();
+shadcnDropdownElement.setAttribute(
+  "data-insp-path",
+  "/project/components/user-button.tsx:42:5:button",
+);
 shadcnDropdownElement.__reactFiber$fixture = {
   type: "button",
   return: {
@@ -239,11 +259,39 @@ assert.deepEqual(
     componentName: "DropdownMenuTrigger",
     componentIndex: 0,
     componentCount: 3,
+    sourceLocation: {
+      file: "/project/components/user-button.tsx",
+      line: 42,
+      column: 5,
+      nodeName: "button",
+      serverPort: 5678,
+    },
   },
 );
 assert.equal(componentNameFor(shadcnDropdownElement, 1), "DropdownMenu");
 assert.equal(componentNameFor(shadcnDropdownElement, 2), "UserButton");
 assert.equal(componentNameFor(shadcnDropdownElement, 3), "UserButton");
+
+const windowsSourceElement = new MockElement();
+codeInspectorPort = 6010;
+windowsSourceElement["data-insp-path"] =
+  "C:\\project\\components\\user-button.tsx:18:7:button";
+windowsSourceElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: UserButton,
+    return: null,
+  },
+};
+
+assert.deepEqual(responseFor(windowsSourceElement).sourceLocation, {
+  file: "C:\\project\\components\\user-button.tsx",
+  line: 18,
+  column: 7,
+  nodeName: "button",
+  serverPort: 6010,
+});
+codeInspectorPort = null;
 
 const nextLinkElement = new MockElement();
 nextLinkElement.__reactFiber$fixture = {
