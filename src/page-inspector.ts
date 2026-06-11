@@ -111,6 +111,7 @@ function cleanName(value: unknown): string | null {
   if (
     UNHELPFUL_NAMES.has(name.toLowerCase()) ||
     FRAMEWORK_INTERNAL_NAMES.has(name) ||
+    name.includes(".") ||
     name.startsWith("_") ||
     !/^[A-Z]/.test(name)
   ) {
