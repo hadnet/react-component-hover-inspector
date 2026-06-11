@@ -76,6 +76,9 @@ Click the icon again to turn the inspector off.
 
 - React internals are private implementation details and can change between
   React versions.
+- Components with debug source paths under `node_modules` are skipped. React 19
+  does not always expose source paths, so dependency filtering falls back to
+  known framework and library wrapper names in those cases.
 - Component names may be unavailable in minified production builds.
 - Host DOM rendered by portals or third-party renderers can produce an unknown
   result.

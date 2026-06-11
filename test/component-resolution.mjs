@@ -62,6 +62,8 @@ function LinkComponent() {}
 function Navbar() {}
 function MotionComponent() {}
 function UserMenu() {}
+function PopperAnchor() {}
+function ThirdPartyButton() {}
 
 const serverComponentElement = new MockElement();
 serverComponentElement.__reactFiber$fixture = {
@@ -138,6 +140,41 @@ primitiveElement.__reactFiber$fixture = {
 
 assert.equal(componentNameFor(primitiveElement), "UserMenu");
 
+const dependencyComponentElement = new MockElement();
+dependencyComponentElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: ThirdPartyButton,
+    _debugSource: {
+      fileName:
+        "/project/node_modules/@radix-ui/react-popper/dist/index.mjs",
+    },
+    return: {
+      type: UserMenu,
+      _debugSource: {
+        fileName: "/project/src/components/user-menu.tsx",
+      },
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(dependencyComponentElement), "UserMenu");
+
+const popperAnchorElement = new MockElement();
+popperAnchorElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: PopperAnchor,
+    return: {
+      type: UserMenu,
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(popperAnchorElement), "UserMenu");
+
 const nextLinkElement = new MockElement();
 nextLinkElement.__reactFiber$fixture = {
   type: "img",
@@ -174,6 +211,11 @@ window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "Primitive.button.SlotClone";
 
 assert.equal(componentNameFor(primitiveElement), "UserMenu");
+
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
+  .getComponentNameForHostInstance = () => "PopperAnchor";
+
+assert.equal(componentNameFor(popperAnchorElement), "UserMenu");
 
 window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "motion.div";
