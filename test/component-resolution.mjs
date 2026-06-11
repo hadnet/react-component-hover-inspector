@@ -46,13 +46,20 @@ vm.runInNewContext(code, {
 const inspect = listeners.get("rchi:inspect-request");
 assert.equal(typeof inspect, "function");
 
-function componentNameFor(element) {
+function responseFor(element, componentIndex = 0) {
   const event = new MockCustomEvent("rchi:inspect-request", {
-    detail: JSON.stringify({ requestId: responses.length + 1 }),
+    detail: JSON.stringify({
+      requestId: responses.length + 1,
+      componentIndex,
+    }),
   });
   event.target = element;
   inspect(event);
-  return JSON.parse(responses.at(-1).detail).componentName;
+  return JSON.parse(responses.at(-1).detail);
+}
+
+function componentNameFor(element, componentIndex = 0) {
+  return responseFor(element, componentIndex).componentName;
 }
 
 function SegmentViewNode() {}
@@ -65,6 +72,9 @@ function UserMenu() {}
 function PopperAnchor() {}
 function ThirdPartyButton() {}
 function MenuAnchor() {}
+function DropdownMenuTrigger() {}
+function DropdownMenu() {}
+function UserButton() {}
 
 const serverComponentElement = new MockElement();
 serverComponentElement.__reactFiber$fixture = {
@@ -81,6 +91,7 @@ serverComponentElement.__reactFiber$fixture = {
 };
 
 assert.equal(componentNameFor(serverComponentElement), "InfoCard");
+assert.equal(componentNameFor(serverComponentElement, 1), "Dashboard");
 
 const clientComponentElement = new MockElement();
 clientComponentElement.__reactFiber$fixture = {
@@ -205,6 +216,34 @@ collectionSlotElement.__reactFiber$fixture = {
 };
 
 assert.equal(componentNameFor(collectionSlotElement), "UserMenu");
+
+const shadcnDropdownElement = new MockElement();
+shadcnDropdownElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: DropdownMenuTrigger,
+    return: {
+      type: DropdownMenu,
+      return: {
+        type: UserButton,
+        return: null,
+      },
+    },
+  },
+};
+
+assert.deepEqual(
+  responseFor(shadcnDropdownElement, 0),
+  {
+    requestId: responses.length,
+    componentName: "DropdownMenuTrigger",
+    componentIndex: 0,
+    componentCount: 3,
+  },
+);
+assert.equal(componentNameFor(shadcnDropdownElement, 1), "DropdownMenu");
+assert.equal(componentNameFor(shadcnDropdownElement, 2), "UserButton");
+assert.equal(componentNameFor(shadcnDropdownElement, 3), "UserButton");
 
 const nextLinkElement = new MockElement();
 nextLinkElement.__reactFiber$fixture = {

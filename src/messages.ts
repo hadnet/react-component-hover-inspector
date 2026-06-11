@@ -11,9 +11,12 @@ export interface StateResponse {
 
 export interface InspectRequest {
   requestId: number;
+  componentIndex?: number;
 }
 
 export interface InspectResponse {
   requestId: number;
   componentName: string;
+  componentIndex: number;
+  componentCount: number;
 }

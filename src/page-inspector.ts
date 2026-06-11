@@ -274,11 +274,12 @@ function nameFromReactDevTools(element: Element): string | null {
   }
 }
 
-function nameFromDebugInfo(fiber: FiberLike): string | null {
+function namesFromDebugInfo(fiber: FiberLike): string[] {
   if (!Array.isArray(fiber._debugInfo)) {
-    return null;
+    return [];
   }
 
+  const names: string[] = [];
   // React stores Server Component ancestry from outermost to innermost.
   // React DevTools models these entries as virtual Fibers, so the last named
   // entry is the component nearest to this host element.
@@ -289,12 +290,12 @@ function nameFromDebugInfo(fiber: FiberLike): string | null {
     }
 
     const name = cleanName(entry.name);
-    if (name !== null) {
-      return name;
+    if (name !== null && !names.includes(name)) {
+      names.push(name);
     }
   }
 
-  return null;
+  return names;
 }
 
 function nameFromFiberType(fiber: FiberLike): string | null {
@@ -305,24 +306,38 @@ function nameFromFiberType(fiber: FiberLike): string | null {
   return nameFromType(fiber.type) ?? nameFromType(fiber.elementType);
 }
 
-function findComponentName(element: Element): string {
-  const startingFiber = findFiber(element);
-  if (startingFiber === null) {
-    return nameFromReactDevTools(element) ?? UNKNOWN_COMPONENT;
+function addComponentName(names: string[], name: string | null): void {
+  if (name !== null && !names.includes(name)) {
+    names.push(name);
+  }
+}
+
+function addFiberComponentNames(names: string[], fiber: FiberLike): void {
+  if (isNodeModulesFiber(fiber)) {
+    return;
   }
 
+  for (const name of namesFromDebugInfo(fiber)) {
+    addComponentName(names, name);
+  }
+  addComponentName(names, nameFromFiberType(fiber));
+}
+
+function findComponentNames(element: Element): string[] {
+  const startingFiber = findFiber(element);
+  if (startingFiber === null) {
+    const devToolsName = nameFromReactDevTools(element);
+    return devToolsName === null ? [] : [devToolsName];
+  }
+
+  const names: string[] = [];
   const visited = new Set<FiberLike>();
   let fiber: FiberLike | null | undefined = startingFiber;
 
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
 
-    const name = isNodeModulesFiber(fiber)
-      ? null
-      : (nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber));
-    if (name !== null) {
-      return name;
-    }
+    addFiberComponentNames(names, fiber);
 
     fiber = fiber.return;
   }
@@ -332,16 +347,15 @@ function findComponentName(element: Element): string {
   fiber = startingFiber._debugOwner;
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
-    const name = isNodeModulesFiber(fiber)
-      ? null
-      : (nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber));
-    if (name !== null) {
-      return name;
-    }
+    addFiberComponentNames(names, fiber);
     fiber = fiber._debugOwner;
   }
 
-  return nameFromReactDevTools(element) ?? UNKNOWN_COMPONENT;
+  if (names.length === 0) {
+    addComponentName(names, nameFromReactDevTools(element));
+  }
+
+  return names;
 }
 
 function onInspectRequest(event: Event): void {
@@ -364,9 +378,18 @@ function onInspectRequest(event: Event): void {
     return;
   }
 
+  const componentNames = findComponentNames(event.target);
+  const requestedIndex =
+    typeof request.componentIndex === "number" ? request.componentIndex : 0;
+  const componentIndex = Math.min(
+    Math.max(0, requestedIndex),
+    Math.max(0, componentNames.length - 1),
+  );
   const response: InspectResponse = {
     requestId: request.requestId,
-    componentName: findComponentName(event.target),
+    componentName: componentNames[componentIndex] ?? UNKNOWN_COMPONENT,
+    componentIndex,
+    componentCount: componentNames.length,
   };
 
   document.dispatchEvent(

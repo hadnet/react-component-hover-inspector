@@ -46,6 +46,7 @@
       <button id="primitive-target">Inspect dotted primitive wrapper</button>
       <button id="dependency-target">Inspect node_modules wrapper</button>
       <button id="menu-anchor-target">Inspect Radix MenuAnchor</button>
+      <button id="shadcn-target">Inspect Shadcn wrapper ancestry</button>
       <a id="link-target" href="#"><img alt="Inspect Next.js Link wrapper" /></a>
     </div>
     <p id="unknown">Inspect unknown component</p>
@@ -148,6 +149,24 @@
           return: {
             type: UserMenu,
             return: null,
+          },
+        },
+      };
+
+      function DropdownMenuTrigger() {}
+      function DropdownMenu() {}
+      function UserButton() {}
+
+      document.querySelector("#shadcn-target").__reactFiber$fixture = {
+        type: "button",
+        return: {
+          type: DropdownMenuTrigger,
+          return: {
+            type: DropdownMenu,
+            return: {
+              type: UserButton,
+              return: null,
+            },
           },
         },
       };
