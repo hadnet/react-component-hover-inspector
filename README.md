@@ -13,6 +13,9 @@ on local React and Next.js pages.
   the DOM tag, nearest meaningful React component name, and element dimensions.
 - Click an inspected element to pin the selection. Click the pinned element
   again to release it and resume normal hover inspection.
+- Press `Ctrl+Shift+X` to move from the nearest accepted React component to its
+  next meaningful owner. Pinning first keeps the inspected DOM element stable
+  while navigating through wrapper components.
 - Use the clipboard button in the pinned label to copy the resolved component
   name.
 - The inspector checks React DOM properties such as `__reactFiber$`,

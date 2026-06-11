@@ -14,6 +14,7 @@ const UNKNOWN_COMPONENT = "Unknown React component";
 const TOOLTIP_GAP = 6;
 const VIEWPORT_MARGIN = 8;
 const COPY_FEEDBACK_DURATION = 1_200;
+const NAVIGATE_SHORTCUT_LABEL = "Ctrl+Shift+X";
 
 let enabled = false;
 let frameId: number | null = null;
@@ -22,6 +23,8 @@ let requestId = 0;
 let currentElement: Element | null = null;
 let pinnedElement: Element | null = null;
 let currentComponentName = UNKNOWN_COMPONENT;
+let currentComponentIndex = 0;
+let currentComponentCount = 0;
 let copyFeedbackTimeout: number | null = null;
 let pointerX = 0;
 let pointerY = 0;
@@ -53,6 +56,8 @@ function hideOverlay(): void {
   currentElement = null;
   pinnedElement = null;
   currentComponentName = UNKNOWN_COMPONENT;
+  currentComponentIndex = 0;
+  currentComponentCount = 0;
 }
 
 function setPinned(element: Element | null): void {
@@ -185,6 +190,8 @@ function createCopyButton(componentName: string): HTMLButtonElement {
 function setTooltipContent(
   element: Element,
   componentName: string,
+  componentIndex = currentComponentIndex,
+  componentCount = currentComponentCount,
 ): void {
   if (tooltip === null) {
     return;
@@ -197,6 +204,7 @@ function setTooltipContent(
   const componentLabel = document.createElement("span");
   const separator = document.createElement("span");
   const dimensions = document.createElement("span");
+  const ancestry = document.createElement("span");
   const copyButton = createCopyButton(componentName);
 
   elementLabel.className = "rchi-element";
@@ -204,21 +212,29 @@ function setTooltipContent(
   componentLabel.className = "rchi-component";
   separator.className = "rchi-separator";
   dimensions.className = "rchi-dimensions";
+  ancestry.className = "rchi-ancestry";
 
   elementLabel.textContent = tagName;
   contextLabel.textContent = "(in";
   componentLabel.textContent = componentName;
   separator.textContent = ") |";
   dimensions.textContent = `${Math.round(rect.width)}px × ${Math.round(rect.height)}px`;
+  ancestry.textContent =
+    componentCount > 1 ? `${componentIndex + 1}/${componentCount}` : "";
+  ancestry.title = `Next React owner: ${NAVIGATE_SHORTCUT_LABEL}`;
 
-  tooltip.replaceChildren(
+  const children: Node[] = [
     elementLabel,
     contextLabel,
     componentLabel,
     separator,
     dimensions,
-    copyButton,
-  );
+  ];
+  if (componentCount > 1) {
+    children.push(ancestry);
+  }
+  children.push(copyButton);
+  tooltip.replaceChildren(...children);
 }
 
 function positionTooltip(element: Element): void {
@@ -246,8 +262,11 @@ function positionTooltip(element: Element): void {
   setImportantStyle(tooltip, "top", `${Math.max(VIEWPORT_MARGIN, top)}px`);
 }
 
-function requestComponentName(element: Element): void {
-  const detail: InspectRequest = { requestId: ++requestId };
+function requestComponentName(element: Element, componentIndex = 0): void {
+  const detail: InspectRequest = {
+    requestId: ++requestId,
+    componentIndex,
+  };
   element.dispatchEvent(
     new CustomEvent(INSPECT_REQUEST_EVENT, {
       bubbles: false,
@@ -259,6 +278,8 @@ function requestComponentName(element: Element): void {
 function inspectElement(element: Element): void {
   currentElement = element;
   currentComponentName = UNKNOWN_COMPONENT;
+  currentComponentIndex = 0;
+  currentComponentCount = 0;
   positionHighlight(element);
   setTooltipContent(element, currentComponentName);
   tooltip?.classList.add("rchi-visible");
@@ -297,6 +318,29 @@ function onPointerMove(event: PointerEvent): void {
   if (pinnedElement === null && frameId === null) {
     frameId = requestAnimationFrame(inspectAtPointer);
   }
+}
+
+function onKeyDown(event: KeyboardEvent): void {
+  if (
+    !enabled ||
+    currentElement === null ||
+    event.key.toLowerCase() !== "x" ||
+    !event.ctrlKey ||
+    !event.shiftKey ||
+    event.altKey ||
+    event.metaKey
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+
+  const nextIndex =
+    currentComponentCount > 0
+      ? Math.min(currentComponentIndex + 1, currentComponentCount - 1)
+      : currentComponentIndex + 1;
+  requestComponentName(currentElement, nextIndex);
 }
 
 function onDocumentClick(event: MouseEvent): void {
@@ -371,13 +415,22 @@ function onInspectResponse(event: Event): void {
   if (
     typeof response?.requestId !== "number" ||
     response.requestId !== requestId ||
-    typeof response.componentName !== "string"
+    typeof response.componentName !== "string" ||
+    typeof response.componentIndex !== "number" ||
+    typeof response.componentCount !== "number"
   ) {
     return;
   }
 
   currentComponentName = response.componentName;
-  setTooltipContent(currentElement, response.componentName);
+  currentComponentIndex = response.componentIndex;
+  currentComponentCount = response.componentCount;
+  setTooltipContent(
+    currentElement,
+    response.componentName,
+    response.componentIndex,
+    response.componentCount,
+  );
   positionTooltip(currentElement);
 }
 
@@ -391,6 +444,7 @@ function setEnabled(nextEnabled: boolean): void {
     ensureOverlay();
     document.addEventListener("pointermove", onPointerMove, { passive: true });
     document.addEventListener("click", onDocumentClick, true);
+    document.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("scroll", onViewportChange, {
       capture: true,
       passive: true,
@@ -399,6 +453,7 @@ function setEnabled(nextEnabled: boolean): void {
   } else {
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("click", onDocumentClick, true);
+    document.removeEventListener("keydown", onKeyDown, true);
     document.removeEventListener("scroll", onViewportChange, true);
     window.removeEventListener("resize", onViewportChange);
     if (frameId !== null) {
