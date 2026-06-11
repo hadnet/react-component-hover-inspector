@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.1...v1.2.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* skip dotted wrapper component names ([c400107](https://github.com/hadnet/react-component-hover-inspector/commit/c400107c50d38d1c39d2bdb9f79a4f82b16b9e60))
+* skip dotted wrapper component names ([b5c869e](https://github.com/hadnet/react-component-hover-inspector/commit/b5c869ef6c662492efa57b2e53d6947e7e4412fa))
+
 ## [1.2.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.0...v1.2.1) (2026-06-11)
 
 
