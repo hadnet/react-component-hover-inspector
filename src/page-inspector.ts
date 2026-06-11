@@ -58,7 +58,6 @@ const FRAMEWORK_INTERNAL_NAMES = new Set([
   "LinkComponent",
   "LoadingBoundary",
   "OuterLayoutRouter",
-  "PopperAnchor",
   "RedirectBoundary",
   "RedirectErrorBoundary",
   "RenderFromTemplateContext",
@@ -68,6 +67,77 @@ const FRAMEWORK_INTERNAL_NAMES = new Set([
   "SegmentTrieNode",
   "SegmentViewNode",
   "SegmentViewStateNode",
+]);
+// Distinctive implementation-layer names used by Radix Primitives. Avoid
+// generic exports such as Portal or Arrow because user components often share
+// those names.
+const RADIX_INTERNAL_NAMES = new Set([
+  "AccordionImpl",
+  "AccordionImplMultiple",
+  "AccordionImplSingle",
+  "CheckboxBubbleInput",
+  "CheckboxTrigger",
+  "CollapsibleContentImpl",
+  "CollectionInit",
+  "CollectionItemSlot",
+  "CollectionProvider",
+  "CollectionProviderImpl",
+  "CollectionSlot",
+  "DialogContentImpl",
+  "DialogContentModal",
+  "DialogContentNonModal",
+  "DialogOverlayImpl",
+  "DismissableLayer",
+  "DismissableLayerBranch",
+  "FocusScope",
+  "FormMessageImpl",
+  "HoverCardContentImpl",
+  "MenuAnchor",
+  "MenuContentImpl",
+  "MenuItemImpl",
+  "MenuRootContentModal",
+  "MenuRootContentNonModal",
+  "NavigationMenuContentImpl",
+  "NavigationMenuIndicatorImpl",
+  "NavigationMenuViewportImpl",
+  "PopoverContentImpl",
+  "PopoverContentModal",
+  "PopoverContentNonModal",
+  "Popper",
+  "PopperAnchor",
+  "PopperArrow",
+  "PopperContent",
+  "Presence",
+  "RadioBubbleInput",
+  "RadioGroupItemBubbleInput",
+  "RadioGroupItemTrigger",
+  "RadioTrigger",
+  "RovingFocusGroupImpl",
+  "ScrollAreaCornerImpl",
+  "ScrollAreaScrollbarImpl",
+  "ScrollAreaThumbImpl",
+  "ScrollAreaViewportStyle",
+  "SelectBubbleInput",
+  "SelectContentFragment",
+  "SelectContentImpl",
+  "SelectItemAlignedPosition",
+  "SelectPopperPosition",
+  "SelectScrollButtonImpl",
+  "SliderBubbleInput",
+  "SliderHorizontal",
+  "SliderImpl",
+  "SliderThumbTrigger",
+  "SliderVertical",
+  "SwitchBubbleInput",
+  "SwitchTrigger",
+  "ToastImpl",
+  "ToggleGroupImpl",
+  "ToggleGroupImplMultiple",
+  "ToggleGroupImplSingle",
+  "ToggleGroupItemImpl",
+  "TooltipContentHoverable",
+  "TooltipContentImpl",
+  "ViewportContentMounter",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -114,6 +184,8 @@ function cleanName(value: unknown): string | null {
   if (
     UNHELPFUL_NAMES.has(name.toLowerCase()) ||
     FRAMEWORK_INTERNAL_NAMES.has(name) ||
+    RADIX_INTERNAL_NAMES.has(name) ||
+    /Collection(?:Provider(?:Impl)?|Init|Slot|ItemSlot)$/.test(name) ||
     name.includes(".") ||
     name.startsWith("_") ||
     !/^[A-Z]/.test(name)
@@ -153,10 +225,7 @@ function isNodeModulesFiber(fiber: FiberLike): boolean {
 }
 
 function nameFromType(type: unknown, seen = new Set<unknown>()): string | null {
-  if (
-    (typeof type !== "function" && !isRecord(type)) ||
-    seen.has(type)
-  ) {
+  if ((typeof type !== "function" && !isRecord(type)) || seen.has(type)) {
     return null;
   }
 
@@ -177,8 +246,7 @@ function nameFromType(type: unknown, seen = new Set<unknown>()): string | null {
   }
 
   return (
-    nameFromType(namedType.type, seen) ??
-    nameFromType(namedType.render, seen)
+    nameFromType(namedType.type, seen) ?? nameFromType(namedType.render, seen)
   );
 }
 
@@ -195,10 +263,12 @@ function nameFromReactDevTools(element: Element): string | null {
   }
 
   try {
-    return cleanName(resolver.call(
-      inspectorWindow.__REACT_DEVTOOLS_GLOBAL_HOOK__?.reactDevtoolsAgent,
-      element,
-    ));
+    return cleanName(
+      resolver.call(
+        inspectorWindow.__REACT_DEVTOOLS_GLOBAL_HOOK__?.reactDevtoolsAgent,
+        element,
+      ),
+    );
   } catch {
     return null;
   }
@@ -249,7 +319,7 @@ function findComponentName(element: Element): string {
 
     const name = isNodeModulesFiber(fiber)
       ? null
-      : nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
+      : (nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber));
     if (name !== null) {
       return name;
     }
@@ -264,7 +334,7 @@ function findComponentName(element: Element): string {
     visited.add(fiber);
     const name = isNodeModulesFiber(fiber)
       ? null
-      : nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
+      : (nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber));
     if (name !== null) {
       return name;
     }
