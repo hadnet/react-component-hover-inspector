@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.4...v1.3.0) (2026-06-11)
+
+
+### Features
+
+* navigate React component ancestors ([2ed01fe](https://github.com/hadnet/react-component-hover-inspector/commit/2ed01fe6a381d1893ea550eedbbc920d3fe06820))
+* navigate React component ancestors ([b8f2326](https://github.com/hadnet/react-component-hover-inspector/commit/b8f232662130ef111d661a231ba86b3de69a295d))
+
 ## [1.2.4](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.3...v1.2.4) (2026-06-11)
 
 
