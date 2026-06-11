@@ -53,6 +53,7 @@ const FRAMEWORK_INTERNAL_NAMES = new Set([
   "InnerLayoutRouter",
   "InnerScrollAndFocusHandler",
   "LayoutRouter",
+  "LinkComponent",
   "LoadingBoundary",
   "OuterLayoutRouter",
   "RedirectBoundary",

@@ -43,6 +43,7 @@
       <button id="known-target">Inspect named component</button>
       <button id="server-target">Inspect server component</button>
       <button id="motion-target">Inspect Motion wrapper</button>
+      <a id="link-target" href="#"><img alt="Inspect Next.js Link wrapper" /></a>
     </div>
     <p id="unknown">Inspect unknown component</p>
     <button type="button" onclick="setInspectorEnabled(false)">
@@ -95,6 +96,20 @@
           },
           return: {
             type: Navbar,
+            return: null,
+          },
+        },
+      };
+
+      function CourseCard() {}
+      function LinkComponent() {}
+
+      document.querySelector("#link-target img").__reactFiber$fixture = {
+        type: "img",
+        return: {
+          type: LinkComponent,
+          return: {
+            type: CourseCard,
             return: null,
           },
         },

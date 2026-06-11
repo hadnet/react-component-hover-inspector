@@ -57,6 +57,8 @@ function componentNameFor(element) {
 
 function SegmentViewNode() {}
 function DashboardCard() {}
+function CourseCard() {}
+function LinkComponent() {}
 function Navbar() {}
 function MotionComponent() {}
 
@@ -119,6 +121,20 @@ motionElement.__reactFiber$fixture = {
 
 assert.equal(componentNameFor(motionElement), "Navbar");
 
+const nextLinkElement = new MockElement();
+nextLinkElement.__reactFiber$fixture = {
+  type: "img",
+  return: {
+    type: LinkComponent,
+    return: {
+      type: CourseCard,
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(nextLinkElement), "CourseCard");
+
 window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
   reactDevtoolsAgent: {
     getComponentNameForHostInstance() {
@@ -133,10 +149,15 @@ assert.equal(
 );
 
 window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
+  .getComponentNameForHostInstance = () => "LinkComponent";
+
+assert.equal(componentNameFor(nextLinkElement), "CourseCard");
+
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "motion.div";
 
 assert.equal(componentNameFor(motionElement), "Navbar");
 
 console.log(
-  "Component resolver skips intrinsic-style wrappers and preserves user component names.",
+  "Component resolver skips framework wrappers and preserves user component names.",
 );
