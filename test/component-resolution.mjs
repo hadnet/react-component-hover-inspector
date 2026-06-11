@@ -64,6 +64,7 @@ function MotionComponent() {}
 function UserMenu() {}
 function PopperAnchor() {}
 function ThirdPartyButton() {}
+function MenuAnchor() {}
 
 const serverComponentElement = new MockElement();
 serverComponentElement.__reactFiber$fixture = {
@@ -175,6 +176,36 @@ popperAnchorElement.__reactFiber$fixture = {
 
 assert.equal(componentNameFor(popperAnchorElement), "UserMenu");
 
+const menuAnchorElement = new MockElement();
+menuAnchorElement.__reactFiber$fixture = {
+  type: "button",
+  return: {
+    type: MenuAnchor,
+    return: {
+      type: UserMenu,
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(menuAnchorElement), "UserMenu");
+
+const collectionSlotElement = new MockElement();
+collectionSlotElement.__reactFiber$fixture = {
+  type: "div",
+  return: {
+    type: {
+      displayName: "MenuCollectionItemSlot",
+    },
+    return: {
+      type: UserMenu,
+      return: null,
+    },
+  },
+};
+
+assert.equal(componentNameFor(collectionSlotElement), "UserMenu");
+
 const nextLinkElement = new MockElement();
 nextLinkElement.__reactFiber$fixture = {
   type: "img",
@@ -218,10 +249,15 @@ window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
 assert.equal(componentNameFor(popperAnchorElement), "UserMenu");
 
 window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
+  .getComponentNameForHostInstance = () => "MenuAnchor";
+
+assert.equal(componentNameFor(menuAnchorElement), "UserMenu");
+
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__.reactDevtoolsAgent
   .getComponentNameForHostInstance = () => "motion.div";
 
 assert.equal(componentNameFor(motionElement), "Navbar");
 
 console.log(
-  "Component resolver skips framework wrappers and preserves user component names.",
+  "Component resolver skips framework and Radix wrappers while preserving user component names.",
 );

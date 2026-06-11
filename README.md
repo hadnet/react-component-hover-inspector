@@ -78,7 +78,9 @@ Click the icon again to turn the inspector off.
   React versions.
 - Components with debug source paths under `node_modules` are skipped. React 19
   does not always expose source paths, so dependency filtering falls back to
-  known framework and library wrapper names in those cases.
+  known framework and Radix UI implementation names in those cases. This
+  fallback includes generated collection wrappers and low-level components such
+  as `MenuAnchor`, `PopperAnchor`, and `FocusScope`.
 - Component names may be unavailable in minified production builds.
 - Host DOM rendered by portals or third-party renderers can produce an unknown
   result.
