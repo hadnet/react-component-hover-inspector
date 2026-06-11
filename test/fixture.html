@@ -44,6 +44,7 @@
       <button id="server-target">Inspect server component</button>
       <button id="motion-target">Inspect Motion wrapper</button>
       <button id="primitive-target">Inspect dotted primitive wrapper</button>
+      <button id="dependency-target">Inspect node_modules wrapper</button>
       <a id="link-target" href="#"><img alt="Inspect Next.js Link wrapper" /></a>
     </div>
     <p id="unknown">Inspect unknown component</p>
@@ -112,6 +113,27 @@
           },
           return: {
             type: UserMenu,
+            return: null,
+          },
+        },
+      };
+
+      function PopperAnchor() {}
+      function ThirdPartyButton() {}
+
+      document.querySelector("#dependency-target").__reactFiber$fixture = {
+        type: "button",
+        return: {
+          type: ThirdPartyButton,
+          _debugSource: {
+            fileName:
+              "/project/node_modules/@radix-ui/react-popper/dist/index.mjs",
+          },
+          return: {
+            type: UserMenu,
+            _debugSource: {
+              fileName: "/project/src/components/user-menu.tsx",
+            },
             return: null,
           },
         },

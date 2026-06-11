@@ -11,6 +11,8 @@ interface FiberLike {
   elementType?: unknown;
   _debugOwner?: FiberLike | null;
   _debugInfo?: unknown;
+  _debugSource?: unknown;
+  _debugStack?: unknown;
 }
 
 interface NamedType {
@@ -56,6 +58,7 @@ const FRAMEWORK_INTERNAL_NAMES = new Set([
   "LinkComponent",
   "LoadingBoundary",
   "OuterLayoutRouter",
+  "PopperAnchor",
   "RedirectBoundary",
   "RedirectErrorBoundary",
   "RenderFromTemplateContext",
@@ -119,6 +122,34 @@ function cleanName(value: unknown): string | null {
   }
 
   return name;
+}
+
+function containsNodeModules(value: unknown): boolean {
+  if (typeof value === "string") {
+    return /(^|[/\\])node_modules([/\\]|$)/.test(value);
+  }
+
+  if (value instanceof Error) {
+    return containsNodeModules(value.stack);
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    containsNodeModules(value.fileName) ||
+    containsNodeModules(value.filename) ||
+    containsNodeModules(value.source) ||
+    containsNodeModules(value.stack)
+  );
+}
+
+function isNodeModulesFiber(fiber: FiberLike): boolean {
+  return (
+    containsNodeModules(fiber._debugSource) ||
+    containsNodeModules(fiber._debugStack)
+  );
 }
 
 function nameFromType(type: unknown, seen = new Set<unknown>()): string | null {
@@ -197,18 +228,17 @@ function nameFromDebugInfo(fiber: FiberLike): string | null {
 }
 
 function nameFromFiberType(fiber: FiberLike): string | null {
+  if (isNodeModulesFiber(fiber)) {
+    return null;
+  }
+
   return nameFromType(fiber.type) ?? nameFromType(fiber.elementType);
 }
 
 function findComponentName(element: Element): string {
-  const devToolsName = nameFromReactDevTools(element);
-  if (devToolsName !== null) {
-    return devToolsName;
-  }
-
   const startingFiber = findFiber(element);
   if (startingFiber === null) {
-    return UNKNOWN_COMPONENT;
+    return nameFromReactDevTools(element) ?? UNKNOWN_COMPONENT;
   }
 
   const visited = new Set<FiberLike>();
@@ -217,7 +247,9 @@ function findComponentName(element: Element): string {
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
 
-    const name = nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
+    const name = isNodeModulesFiber(fiber)
+      ? null
+      : nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
     if (name !== null) {
       return name;
     }
@@ -230,14 +262,16 @@ function findComponentName(element: Element): string {
   fiber = startingFiber._debugOwner;
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
-    const name = nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
+    const name = isNodeModulesFiber(fiber)
+      ? null
+      : nameFromDebugInfo(fiber) ?? nameFromFiberType(fiber);
     if (name !== null) {
       return name;
     }
     fiber = fiber._debugOwner;
   }
 
-  return UNKNOWN_COMPONENT;
+  return nameFromReactDevTools(element) ?? UNKNOWN_COMPONENT;
 }
 
 function onInspectRequest(event: Event): void {
