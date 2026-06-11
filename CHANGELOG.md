@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.4](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.3...v1.2.4) (2026-06-11)
+
+
+### Bug Fixes
+
+* skip Radix internal component names ([494b8ee](https://github.com/hadnet/react-component-hover-inspector/commit/494b8ee4bae536d0491b22330ace32b0a19829dd))
+* skip Radix internal component names ([0c10e11](https://github.com/hadnet/react-component-hover-inspector/commit/0c10e11bd2b83a856416c11d2e56592a40679173))
+
 ## [1.2.3](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.2...v1.2.3) (2026-06-11)
 
 
