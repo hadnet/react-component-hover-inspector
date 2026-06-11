@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.3.0...v1.4.0) (2026-06-11)
+
+
+### Features
+
+* open inspected JSX source ([5eec0dd](https://github.com/hadnet/react-component-hover-inspector/commit/5eec0ddcea5aee0f4e597d642a2ccc0bda5c4f99))
+* open inspected JSX source ([4670e5b](https://github.com/hadnet/react-component-hover-inspector/commit/4670e5baef9dddc2f54d9d334169f7373b0c33cc))
+
 ## [1.3.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.4...v1.3.0) (2026-06-11)
 
 
