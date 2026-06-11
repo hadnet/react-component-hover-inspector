@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.2...v1.2.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* skip dependency component names ([02b815e](https://github.com/hadnet/react-component-hover-inspector/commit/02b815ebc3a65801665b1362b5dc080b6c39c4c7))
+* skip dependency component names ([5ec18ee](https://github.com/hadnet/react-component-hover-inspector/commit/5ec18eed5ec74fe9dd67cb7c7fc0294dee17b238))
+
 ## [1.2.2](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.1...v1.2.2) (2026-06-11)
 
 
