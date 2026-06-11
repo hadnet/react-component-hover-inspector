@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.2.0...v1.2.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* skip Next.js Link wrapper ([e53597d](https://github.com/hadnet/react-component-hover-inspector/commit/e53597de0e1f979a7b95cd89bd220cfd84c6ab3a))
+* skip Next.js Link wrapper ([fb928bb](https://github.com/hadnet/react-component-hover-inspector/commit/fb928bb8b3d732ae5aab4a86ff89228006d5be9a))
+
 ## [1.2.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.1.0...v1.2.0) (2026-06-07)
 
 
