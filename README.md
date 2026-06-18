@@ -1,9 +1,21 @@
 # React Component Hover Inspector
 
-https://github.com/user-attachments/assets/5d6a11e1-def2-4e3e-b2bb-00055d3d7775
+https://github.com/user-attachments/assets/120a83af-cc93-4f3e-b361-71b73877789b
 
-A Manifest V3 Chrome extension for identifying React component names directly
-on local React and Next.js pages.
+React Component Hover Inspector (RCHI) is a Chrome Extension that helps you identify, navigate, and open the source of React/Next.js components directly from the page.
+
+## Features
+- 🔍 Inspect any React/Next.js (RSC) component by hovering over it.
+- 🏷️ Display the DOM tag, nearest meaningful React component name, and element dimensions.
+- 📌 Pin an inspected component to keep the selection stable while exploring component ownership.
+- ⌨️ Navigate up the React component hierarchy with Ctrl+Shift+X, skipping framework and wrapper components.
+- 📋 Copy the resolved component name to the clipboard with a single click.
+- 🚀 Open the exact JSX source location in VS Code IDE when code-inspector-plugin metadata is available.
+- ⚛️ Supports React Fiber inspection through internal React DOM properties and Fiber tree traversal.
+- 🧩 Resolves React 19 Server Components using React DevTools metadata or Fiber debug information.
+- 🎭 Automatically skips intrinsic-style wrappers such as motion.div and styled.div to surface meaningful user components.
+- 🎯 Visual element highlighting with real-time inspection overlays.
+- 🔖 Toolbar badge indicates when the inspector is active.
 
 ## How it works
 
