@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.4.0...v1.4.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* keep inspector tooltip action buttons visible when labels are long
+
 ## [1.4.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.3.0...v1.4.0) (2026-06-11)
 
 

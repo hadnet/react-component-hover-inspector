@@ -18,7 +18,8 @@
 }
 
 #rchi-tooltip {
-  max-width: min(420px, calc(100vw - 16px)) !important;
+  width: max-content !important;
+  max-width: calc(100vw - 16px) !important;
   min-height: 28px !important;
   padding: 4px 8px !important;
   overflow: hidden !important;
@@ -81,6 +82,14 @@
 }
 
 #rchi-tooltip .rchi-element,
+#rchi-tooltip .rchi-context,
+#rchi-tooltip .rchi-separator,
+#rchi-tooltip .rchi-dimensions,
+#rchi-tooltip .rchi-ancestry {
+  flex: 0 0 auto !important;
+}
+
+#rchi-tooltip .rchi-element,
 #rchi-tooltip .rchi-component {
   color: #f472d0 !important;
 }
@@ -91,7 +100,11 @@
 }
 
 #rchi-tooltip .rchi-component {
+  min-width: 0 !important;
   margin-left: 4px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 1 auto !important;
 }
 
 #rchi-tooltip .rchi-separator {
