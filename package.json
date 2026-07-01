@@ -1,6 +1,6 @@
 {
   "name": "react-component-hover-inspector",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "description": "A local-development Chrome extension that identifies React components on hover.",
   "scripts": {
