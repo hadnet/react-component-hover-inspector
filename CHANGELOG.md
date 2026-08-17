@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.2](https://github.com/hadnet/react-component-hover-inspector/compare/v1.4.1...v1.4.2) (2026-08-17)
+
+
+### Features
+
+* add component tree navigation controls
+
+
+### Bug Fixes
+
+* render inspector action icons in white for better visibility
+
 ## [1.4.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.4.0...v1.4.1) (2026-07-01)
 
 
