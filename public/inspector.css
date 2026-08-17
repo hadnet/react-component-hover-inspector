@@ -179,6 +179,13 @@
   opacity: 0.7 !important;
 }
 
+#rchi-tooltip .rchi-navigation-button:disabled {
+  border-color: rgb(255 255 255 / 8%) !important;
+  background: rgb(255 255 255 / 3%) !important;
+  cursor: not-allowed !important;
+  opacity: 0.45 !important;
+}
+
 #rchi-tooltip .rchi-copy-button.rchi-copy-error {
   border-color: rgb(248 113 113 / 55%) !important;
   color: #fca5a5 !important;
@@ -189,7 +196,10 @@
   display: block !important;
   width: 14px !important;
   height: 14px !important;
+  color: #fff !important;
   fill: none !important;
   stroke: currentColor !important;
   stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
 }

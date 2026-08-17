@@ -138,6 +138,66 @@ function createSourceIcon(): SVGSVGElement {
   return icon;
 }
 
+function createNavigationIcon(direction: "up" | "down"): SVGSVGElement {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(svgNamespace, "svg");
+  const path = document.createElementNS(svgNamespace, "path");
+
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  path.setAttribute(
+    "d",
+    direction === "up" ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6",
+  );
+  icon.append(path);
+
+  return icon;
+}
+
+function navigateComponent(offset: -1 | 1): void {
+  if (currentElement === null || currentComponentCount < 2) {
+    return;
+  }
+
+  const nextIndex = Math.min(
+    Math.max(0, currentComponentIndex + offset),
+    currentComponentCount - 1,
+  );
+  if (nextIndex !== currentComponentIndex) {
+    requestComponentName(currentElement, nextIndex);
+  }
+}
+
+function createNavigationButton(
+  direction: "up" | "down",
+  disabled: boolean,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  const isUp = direction === "up";
+  const label = isUp
+    ? "Navigate up to parent component"
+    : "Navigate down to child component";
+
+  button.className = `rchi-action-button rchi-navigation-button rchi-navigation-${direction}-button`;
+  button.type = "button";
+  button.disabled = disabled;
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.append(createNavigationIcon(direction));
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    navigateComponent(isUp ? 1 : -1);
+  });
+
+  return button;
+}
+
 function copyTextWithCommand(text: string): void {
   const input = document.createElement("textarea");
   input.value = text;
@@ -303,6 +363,14 @@ function setTooltipContent(
   const separator = document.createElement("span");
   const dimensions = document.createElement("span");
   const ancestry = document.createElement("span");
+  const navigateUpButton = createNavigationButton(
+    "up",
+    componentCount < 2 || componentIndex >= componentCount - 1,
+  );
+  const navigateDownButton = createNavigationButton(
+    "down",
+    componentCount < 2 || componentIndex <= 0,
+  );
   const sourceButton = createSourceButton(sourceLocation);
   const copyButton = createCopyButton(componentName);
 
@@ -332,7 +400,12 @@ function setTooltipContent(
   if (componentCount > 1) {
     children.push(ancestry);
   }
-  children.push(sourceButton, copyButton);
+  children.push(
+    navigateUpButton,
+    navigateDownButton,
+    sourceButton,
+    copyButton,
+  );
   tooltip.replaceChildren(...children);
 }
 
@@ -436,11 +509,7 @@ function onKeyDown(event: KeyboardEvent): void {
   event.preventDefault();
   event.stopImmediatePropagation();
 
-  const nextIndex =
-    currentComponentCount > 0
-      ? Math.min(currentComponentIndex + 1, currentComponentCount - 1)
-      : currentComponentIndex + 1;
-  requestComponentName(currentElement, nextIndex);
+  navigateComponent(1);
 }
 
 function onDocumentClick(event: MouseEvent): void {
