@@ -27,10 +27,18 @@ export interface InspectRequest {
   componentIndex?: number;
 }
 
+export interface HighlightBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface InspectResponse {
   requestId: number;
   componentName: string;
   componentIndex: number;
   componentCount: number;
+  highlightBounds: HighlightBounds;
   sourceLocation: SourceLocation | null;
 }

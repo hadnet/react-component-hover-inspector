@@ -1,6 +1,7 @@
 import {
   INSPECT_REQUEST_EVENT,
   INSPECT_RESPONSE_EVENT,
+  type HighlightBounds,
   type InspectRequest,
   type InspectResponse,
   type OpenSourceResponse,
@@ -29,6 +30,7 @@ let currentComponentName = UNKNOWN_COMPONENT;
 let currentComponentIndex = 0;
 let currentComponentCount = 0;
 let currentSourceLocation: SourceLocation | null = null;
+let currentHighlightBounds: HighlightBounds | null = null;
 let copyFeedbackTimeout: number | null = null;
 let sourceFeedbackTimeout: number | null = null;
 let pointerX = 0;
@@ -68,6 +70,7 @@ function hideOverlay(): void {
   currentComponentIndex = 0;
   currentComponentCount = 0;
   currentSourceLocation = null;
+  currentHighlightBounds = null;
 }
 
 function setPinned(element: Element | null): void {
@@ -84,16 +87,25 @@ function setImportantStyle(
   element.style.setProperty(property, value, "important");
 }
 
-function positionHighlight(element: Element): void {
+function boundsForElement(element: Element): HighlightBounds {
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function positionHighlight(bounds: HighlightBounds): void {
   if (highlight === null) {
     return;
   }
 
-  const rect = element.getBoundingClientRect();
-  setImportantStyle(highlight, "left", `${rect.left}px`);
-  setImportantStyle(highlight, "top", `${rect.top}px`);
-  setImportantStyle(highlight, "width", `${rect.width}px`);
-  setImportantStyle(highlight, "height", `${rect.height}px`);
+  setImportantStyle(highlight, "left", `${bounds.left}px`);
+  setImportantStyle(highlight, "top", `${bounds.top}px`);
+  setImportantStyle(highlight, "width", `${bounds.width}px`);
+  setImportantStyle(highlight, "height", `${bounds.height}px`);
   highlight.classList.add("rchi-visible");
 }
 
@@ -350,12 +362,12 @@ function setTooltipContent(
   componentIndex = currentComponentIndex,
   componentCount = currentComponentCount,
   sourceLocation = currentSourceLocation,
+  highlightBounds = currentHighlightBounds ?? boundsForElement(element),
 ): void {
   if (tooltip === null) {
     return;
   }
 
-  const rect = element.getBoundingClientRect();
   const tagName = element.tagName.toLowerCase();
   const elementLabel = document.createElement("span");
   const contextLabel = document.createElement("span");
@@ -385,7 +397,7 @@ function setTooltipContent(
   contextLabel.textContent = "(in";
   componentLabel.textContent = componentName;
   separator.textContent = ") |";
-  dimensions.textContent = `${Math.round(rect.width)}px × ${Math.round(rect.height)}px`;
+  dimensions.textContent = `${Math.round(highlightBounds.width)}px × ${Math.round(highlightBounds.height)}px`;
   ancestry.textContent =
     componentCount > 1 ? `${componentIndex + 1}/${componentCount}` : "";
   ancestry.title = `Next React owner: ${NAVIGATE_SHORTCUT_LABEL}`;
@@ -409,21 +421,20 @@ function setTooltipContent(
   tooltip.replaceChildren(...children);
 }
 
-function positionTooltip(element: Element): void {
+function positionTooltip(bounds: HighlightBounds): void {
   if (tooltip === null) {
     return;
   }
 
-  const elementRect = element.getBoundingClientRect();
   const rect = tooltip.getBoundingClientRect();
-  let left = elementRect.left;
-  let top = elementRect.bottom + TOOLTIP_GAP;
+  let left = bounds.left;
+  let top = bounds.top + bounds.height + TOOLTIP_GAP;
 
   if (left + rect.width > window.innerWidth - VIEWPORT_MARGIN) {
     left = window.innerWidth - rect.width - VIEWPORT_MARGIN;
   }
   if (top + rect.height > window.innerHeight - VIEWPORT_MARGIN) {
-    top = elementRect.top - rect.height - TOOLTIP_GAP;
+    top = bounds.top - rect.height - TOOLTIP_GAP;
   }
 
   setImportantStyle(
@@ -448,15 +459,17 @@ function requestComponentName(element: Element, componentIndex = 0): void {
 }
 
 function inspectElement(element: Element): void {
+  const highlightBounds = boundsForElement(element);
   currentElement = element;
   currentComponentName = UNKNOWN_COMPONENT;
   currentComponentIndex = 0;
   currentComponentCount = 0;
   currentSourceLocation = null;
-  positionHighlight(element);
-  setTooltipContent(element, currentComponentName);
+  currentHighlightBounds = highlightBounds;
+  positionHighlight(highlightBounds);
+  setTooltipContent(element, currentComponentName, 0, 0, null, highlightBounds);
   tooltip?.classList.add("rchi-visible");
-  positionTooltip(element);
+  positionTooltip(highlightBounds);
   requestComponentName(element);
 }
 
@@ -549,15 +562,28 @@ function updatePinnedOverlay(): void {
     return;
   }
 
-  positionHighlight(pinnedElement);
-  setTooltipContent(pinnedElement, currentComponentName);
-  positionTooltip(pinnedElement);
+  requestComponentName(pinnedElement, currentComponentIndex);
 }
 
 function onViewportChange(): void {
   if (pinnedElement !== null && positionFrameId === null) {
     positionFrameId = requestAnimationFrame(updatePinnedOverlay);
   }
+}
+
+function isHighlightBounds(value: unknown): value is HighlightBounds {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "left" in value &&
+    Number.isFinite(value.left) &&
+    "top" in value &&
+    Number.isFinite(value.top) &&
+    "width" in value &&
+    Number.isFinite(value.width) &&
+    "height" in value &&
+    Number.isFinite(value.height)
+  );
 }
 
 function onInspectResponse(event: Event): void {
@@ -587,6 +613,7 @@ function onInspectResponse(event: Event): void {
     typeof response.componentName !== "string" ||
     typeof response.componentIndex !== "number" ||
     typeof response.componentCount !== "number" ||
+    !isHighlightBounds(response.highlightBounds) ||
     !(
       response.sourceLocation === null ||
       (typeof response.sourceLocation === "object" &&
@@ -604,14 +631,17 @@ function onInspectResponse(event: Event): void {
   currentComponentIndex = response.componentIndex;
   currentComponentCount = response.componentCount;
   currentSourceLocation = response.sourceLocation;
+  currentHighlightBounds = response.highlightBounds;
+  positionHighlight(response.highlightBounds);
   setTooltipContent(
     currentElement,
     response.componentName,
     response.componentIndex,
     response.componentCount,
     response.sourceLocation,
+    response.highlightBounds,
   );
-  positionTooltip(currentElement);
+  positionTooltip(response.highlightBounds);
 }
 
 function setEnabled(nextEnabled: boolean): void {

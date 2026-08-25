@@ -3,11 +3,15 @@ import {
   INSPECT_RESPONSE_EVENT,
   type InspectRequest,
   type InspectResponse,
+  type HighlightBounds,
   type SourceLocation,
 } from "./messages";
 
 interface FiberLike {
+  child?: FiberLike | null;
+  sibling?: FiberLike | null;
   return?: FiberLike | null;
+  stateNode?: unknown;
   type?: unknown;
   elementType?: unknown;
   _debugOwner?: FiberLike | null;
@@ -29,6 +33,11 @@ interface ReactDevToolsAgent {
 
 interface ReactDevToolsHook {
   reactDevtoolsAgent?: ReactDevToolsAgent | null;
+}
+
+interface ComponentMatch {
+  name: string;
+  fiber: FiberLike | null;
 }
 
 const FIBER_PROPERTY_PREFIXES = [
@@ -367,38 +376,47 @@ function nameFromFiberType(fiber: FiberLike): string | null {
   return nameFromType(fiber.type) ?? nameFromType(fiber.elementType);
 }
 
-function addComponentName(names: string[], name: string | null): void {
-  if (name !== null && !names.includes(name)) {
-    names.push(name);
+function addComponentMatch(
+  matches: ComponentMatch[],
+  name: string | null,
+  fiber: FiberLike | null,
+): void {
+  if (name !== null && !matches.some((match) => match.name === name)) {
+    matches.push({ name, fiber });
   }
 }
 
-function addFiberComponentNames(names: string[], fiber: FiberLike): void {
+function addFiberComponentMatches(
+  matches: ComponentMatch[],
+  fiber: FiberLike,
+): void {
   if (isNodeModulesFiber(fiber)) {
     return;
   }
 
   for (const name of namesFromDebugInfo(fiber)) {
-    addComponentName(names, name);
+    addComponentMatch(matches, name, fiber);
   }
-  addComponentName(names, nameFromFiberType(fiber));
+  addComponentMatch(matches, nameFromFiberType(fiber), fiber);
 }
 
-function findComponentNames(element: Element): string[] {
+function findComponentMatches(element: Element): ComponentMatch[] {
   const startingFiber = findFiber(element);
   if (startingFiber === null) {
     const devToolsName = nameFromReactDevTools(element);
-    return devToolsName === null ? [] : [devToolsName];
+    return devToolsName === null
+      ? []
+      : [{ name: devToolsName, fiber: null }];
   }
 
-  const names: string[] = [];
+  const matches: ComponentMatch[] = [];
   const visited = new Set<FiberLike>();
   let fiber: FiberLike | null | undefined = startingFiber;
 
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
 
-    addFiberComponentNames(names, fiber);
+    addFiberComponentMatches(matches, fiber);
 
     fiber = fiber.return;
   }
@@ -408,15 +426,67 @@ function findComponentNames(element: Element): string[] {
   fiber = startingFiber._debugOwner;
   while (fiber !== null && fiber !== undefined && !visited.has(fiber)) {
     visited.add(fiber);
-    addFiberComponentNames(names, fiber);
+    addFiberComponentMatches(matches, fiber);
     fiber = fiber._debugOwner;
   }
 
-  if (names.length === 0) {
-    addComponentName(names, nameFromReactDevTools(element));
+  if (matches.length === 0) {
+    addComponentMatch(
+      matches,
+      nameFromReactDevTools(element),
+      startingFiber,
+    );
   }
 
-  return names;
+  return matches;
+}
+
+function collectHostElements(
+  fiber: FiberLike,
+  elements: Element[],
+  visited: Set<FiberLike>,
+): void {
+  if (visited.has(fiber)) {
+    return;
+  }
+  visited.add(fiber);
+
+  if (fiber.stateNode instanceof Element) {
+    elements.push(fiber.stateNode);
+    return;
+  }
+
+  let child = fiber.child;
+  while (child !== null && child !== undefined) {
+    collectHostElements(child, elements, visited);
+    child = child.sibling;
+  }
+}
+
+function boundsForMatch(
+  match: ComponentMatch | undefined,
+  fallbackElement: Element,
+): HighlightBounds {
+  const elements: Element[] = [];
+  if (match?.fiber !== null && match?.fiber !== undefined) {
+    collectHostElements(match.fiber, elements, new Set());
+  }
+  if (elements.length === 0) {
+    elements.push(fallbackElement);
+  }
+
+  const rects = elements.map((element) => element.getBoundingClientRect());
+  const left = Math.min(...rects.map((rect) => rect.left));
+  const top = Math.min(...rects.map((rect) => rect.top));
+  const right = Math.max(...rects.map((rect) => rect.right));
+  const bottom = Math.max(...rects.map((rect) => rect.bottom));
+
+  return {
+    left,
+    top,
+    width: right - left,
+    height: bottom - top,
+  };
 }
 
 function onInspectRequest(event: Event): void {
@@ -439,18 +509,20 @@ function onInspectRequest(event: Event): void {
     return;
   }
 
-  const componentNames = findComponentNames(event.target);
+  const componentMatches = findComponentMatches(event.target);
   const requestedIndex =
     typeof request.componentIndex === "number" ? request.componentIndex : 0;
   const componentIndex = Math.min(
     Math.max(0, requestedIndex),
-    Math.max(0, componentNames.length - 1),
+    Math.max(0, componentMatches.length - 1),
   );
+  const componentMatch = componentMatches[componentIndex];
   const response: InspectResponse = {
     requestId: request.requestId,
-    componentName: componentNames[componentIndex] ?? UNKNOWN_COMPONENT,
+    componentName: componentMatch?.name ?? UNKNOWN_COMPONENT,
     componentIndex,
-    componentCount: componentNames.length,
+    componentCount: componentMatches.length,
+    highlightBounds: boundsForMatch(componentMatch, event.target),
     sourceLocation: findSourceLocation(event.target),
   };
 
