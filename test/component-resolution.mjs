@@ -7,9 +7,16 @@ const responses = [];
 let codeInspectorPort = null;
 
 class MockElement {
-  constructor() {
+  constructor(tagName = "div", rect = {}) {
+    this.tagName = tagName.toUpperCase();
     this.parentElement = null;
     this.attributes = new Map();
+    this.rect = {
+      left: rect.left ?? 0,
+      top: rect.top ?? 0,
+      width: rect.width ?? 0,
+      height: rect.height ?? 0,
+    };
   }
 
   getAttribute(name) {
@@ -18,6 +25,14 @@ class MockElement {
 
   setAttribute(name, value) {
     this.attributes.set(name, String(value));
+  }
+
+  getBoundingClientRect() {
+    return {
+      ...this.rect,
+      right: this.rect.left + this.rect.width,
+      bottom: this.rect.top + this.rect.height,
+    };
   }
 }
 
@@ -91,6 +106,50 @@ function MenuAnchor() {}
 function DropdownMenuTrigger() {}
 function DropdownMenu() {}
 function UserButton() {}
+function ComponentA() {}
+function ComponentB() {}
+
+const componentAElement = new MockElement("div", {
+  left: 200,
+  top: 100,
+  width: 300,
+  height: 180,
+});
+const componentBElement = new MockElement("div", {
+  left: 10,
+  top: 20,
+  width: 100,
+  height: 50,
+});
+const componentAHostFiber = {
+  type: "div",
+  stateNode: componentAElement,
+};
+const componentBHostFiber = {
+  type: "div",
+  stateNode: componentBElement,
+};
+const componentAFiber = {
+  type: ComponentA,
+  child: componentAHostFiber,
+  return: null,
+};
+const componentBFiber = {
+  type: ComponentB,
+  child: componentBHostFiber,
+  return: componentAHostFiber,
+};
+componentAHostFiber.child = componentBFiber;
+componentAHostFiber.return = componentAFiber;
+componentBHostFiber.return = componentBFiber;
+componentBElement.__reactFiber$fixture = componentBHostFiber;
+
+assert.deepEqual(responseFor(componentBElement, 1).highlightBounds, {
+  left: 200,
+  top: 100,
+  width: 300,
+  height: 180,
+});
 
 const serverComponentElement = new MockElement();
 serverComponentElement.__reactFiber$fixture = {
@@ -259,6 +318,12 @@ assert.deepEqual(
     componentName: "DropdownMenuTrigger",
     componentIndex: 0,
     componentCount: 3,
+    highlightBounds: {
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0,
+    },
     sourceLocation: {
       file: "/project/components/user-button.tsx",
       line: 42,
