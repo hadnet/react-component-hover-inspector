@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.5.0...v1.5.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* move highlight with component navigation ([fa56919](https://github.com/hadnet/react-component-hover-inspector/commit/fa56919327b7b8f24d04cd765d021561af36a240))
+* move highlight with component navigation ([9778bee](https://github.com/hadnet/react-component-hover-inspector/commit/9778bee79ca413f81c9aa64da2b7f1201f06bffd))
+
 ## [1.5.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.4.2...v1.5.0) (2026-08-17)
 
 
