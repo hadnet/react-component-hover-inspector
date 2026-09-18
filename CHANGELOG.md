@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/hadnet/react-component-hover-inspector/compare/v1.5.1...v1.6.0) (2026-09-18)
+
+
+### Features
+
+* add Escape deselection and full-name tooltips ([6826986](https://github.com/hadnet/react-component-hover-inspector/commit/682698612bc5503e1bd46ac0c28bf433c83f948f))
+* add Escape deselection and full-name tooltips ([349a7ea](https://github.com/hadnet/react-component-hover-inspector/commit/349a7ead9dfbc2d1650339982239ad7a04b553d9))
+
 ## [1.5.1](https://github.com/hadnet/react-component-hover-inspector/compare/v1.5.0...v1.5.1) (2026-08-25)
 
 
