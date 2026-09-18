@@ -396,6 +396,7 @@ function setTooltipContent(
   elementLabel.textContent = tagName;
   contextLabel.textContent = "(in";
   componentLabel.textContent = componentName;
+  componentLabel.title = componentName;
   separator.textContent = ") |";
   dimensions.textContent = `${Math.round(highlightBounds.width)}px × ${Math.round(highlightBounds.height)}px`;
   ancestry.textContent =
@@ -507,6 +508,13 @@ function onPointerMove(event: PointerEvent): void {
 }
 
 function onKeyDown(event: KeyboardEvent): void {
+  if (enabled && event.key === "Escape" && pinnedElement !== null) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    hideOverlay();
+    return;
+  }
+
   if (
     !enabled ||
     currentElement === null ||
