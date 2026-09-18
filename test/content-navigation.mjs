@@ -167,7 +167,7 @@ const ownerElement = new MockElement("div", {
   height: 180,
 });
 
-function ComponentA() {}
+function ComponentNameThatCannotFitInANarrowInspectorTooltip() {}
 function ComponentB() {}
 
 const componentAHostFiber = {
@@ -179,7 +179,7 @@ const componentBHostFiber = {
   stateNode: inspectedElement,
 };
 const componentAFiber = {
-  type: ComponentA,
+  type: ComponentNameThatCannotFitInANarrowInspectorTooltip,
   child: componentAHostFiber,
   return: null,
 };
@@ -308,6 +308,13 @@ assert.deepEqual(
   ),
   ["200px", "100px", "300px", "180px"],
 );
+const componentLabel = tooltip.children.find((element) =>
+  element.className.split(/\s+/).includes("rchi-component"),
+);
+assert.equal(
+  componentLabel.title,
+  "ComponentNameThatCannotFitInANarrowInspectorTooltip",
+);
 
 const downButton = tooltip.children.find((element) =>
   element.className.split(/\s+/).includes("rchi-navigation-down-button"),
@@ -320,6 +327,22 @@ assert.deepEqual(
     highlight.style.getPropertyValue(property),
   ),
   ["10px", "20px", "100px", "50px"],
+);
+
+document.dispatchEvent(new MockEvent("keydown", { key: "Escape" }));
+for (const overlay of [highlight, tooltip]) {
+  const classes = overlay.className.split(/\s+/);
+  assert.equal(classes.includes("rchi-visible"), false);
+  assert.equal(classes.includes("rchi-pinned"), false);
+}
+
+const inspectorCss = await readFile(
+  new URL("../dist/inspector.css", import.meta.url),
+  "utf8",
+);
+assert.match(
+  inspectorCss,
+  /#rchi-tooltip \.rchi-component\s*\{[^}]*pointer-events: auto !important;/s,
 );
 
 console.log("Component navigation moves the highlight with the selected owner.");

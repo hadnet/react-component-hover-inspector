@@ -105,6 +105,7 @@
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   flex: 1 1 auto !important;
+  pointer-events: auto !important;
 }
 
 #rchi-tooltip .rchi-separator {
